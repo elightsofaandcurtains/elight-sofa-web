@@ -106,17 +106,12 @@ export default function Navbar() {
           damping: 25,
           duration: 0.6
         }}
-        className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-out bg-white shadow-lg py-3"
-        )}
-        style={{
-          willChange: scrolled ? 'background-color, backdrop-filter, box-shadow' : 'auto'
-        }}
+        className="fixed top-0 left-0 right-0 w-full z-50 bg-white shadow-md"
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2 z-10">
+            <Link href="/" className="flex items-center space-x-2 z-10 flex-shrink-0">
               <motion.div
                 whileHover={{
                   scale: 1.05,
@@ -127,10 +122,10 @@ export default function Navbar() {
                 className="relative"
               >
                 <span className={cn(
-                  "text-xl lg:text-2xl font-serif font-bold transition-colors duration-300",
-                  scrolled ? "text-[#D4AF37]" : "text-[#D4AF37]"
+                  "text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold transition-colors duration-300 text-[#D4AF37]"
                 )}>
-                  Elight Sofa House
+                  <span className="hidden sm:inline">Elight Sofa House</span>
+                  <span className="sm:hidden">Elight Sofa</span>
                 </span>
               </motion.div>
             </Link>
@@ -284,16 +279,10 @@ export default function Navbar() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="md:hidden p-2 rounded-full transition-colors duration-300 z-10 text-black touch-target"
-              style={{ color: '#000000' }}
+              className="md:hidden p-2 rounded-lg bg-gray-100 transition-colors duration-300 z-10 text-black"
               aria-label="Toggle mobile menu"
             >
-              <motion.div
-                animate={{ rotate: mobileMenuOpen ? 180 : 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </motion.div>
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </motion.button>
           </div>
         </div>
@@ -321,7 +310,7 @@ export default function Navbar() {
             initial="initial"
             animate="animate"
             exit="exit"
-            className="fixed top-0 right-0 h-screen w-full max-w-sm bg-white shadow-2xl z-50 md:hidden"
+            className="fixed top-0 right-0 h-full w-[85vw] max-w-sm bg-white shadow-2xl z-50 md:hidden overflow-hidden"
           >
             <div className="flex flex-col h-full">
               {/* Mobile Menu Header */}
