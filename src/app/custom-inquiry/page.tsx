@@ -138,7 +138,7 @@ function CustomInquiryContent() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#F9F8F6] py-20 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F9F8F6] pt-24 pb-20 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -172,7 +172,7 @@ function CustomInquiryContent() {
   const { name, address, contact, owner } = COMPANY_CONFIG;
 
   return (
-    <div className="min-h-screen bg-[#F9F8F6] py-20">
+    <div className="min-h-screen bg-[#F9F8F6] pt-24 pb-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -429,11 +429,10 @@ function CustomInquiryContent() {
                       key={method.value}
                       type="button"
                       onClick={() => setValue("preferredContact", method.value)}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                        selectedContact === method.value
-                          ? "border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]"
-                          : "border-gray-200 text-gray-500 hover:border-[#D4AF37]/50"
-                      }`}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${selectedContact === method.value
+                        ? "border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]"
+                        : "border-gray-200 text-gray-500 hover:border-[#D4AF37]/50"
+                        }`}
                     >
                       <method.icon size={20} />
                       <span className="text-xs font-medium">{method.label}</span>

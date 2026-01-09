@@ -85,7 +85,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FAF9F7] to-[#F5F3F0] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#FAF9F7] to-[#F5F3F0] pt-24 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-[#D4AF37] mx-auto mb-4" />
           <p className="text-gray-600">Loading product details...</p>
@@ -96,7 +96,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FAF9F7] to-[#F5F3F0] flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-b from-[#FAF9F7] to-[#F5F3F0] pt-24 flex flex-col items-center justify-center px-4">
         <Package className="w-16 h-16 text-gray-300 mb-4" />
         <h1 className="text-2xl font-serif text-[#2D2926] mb-4">Product Not Found</h1>
         <p className="text-[#8B8680] mb-6">The product you're looking for doesn't exist.</p>
@@ -156,7 +156,7 @@ export default function ProductDetailPage() {
   const categoryDetails = getCategorySpecificDetails();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FAF9F7] to-[#F5F3F0]">
+    <div className="min-h-screen bg-gradient-to-b from-[#FAF9F7] to-[#F5F3F0] pt-24">
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8 lg:py-12">
         <motion.button

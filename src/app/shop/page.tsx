@@ -220,7 +220,7 @@ export default function ShopPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F9F8F6] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F9F8F6] pt-24 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-[#D4AF37] mx-auto mb-4" />
           <p className="text-gray-600">Loading collections...</p>
@@ -231,7 +231,7 @@ export default function ShopPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F9F8F6] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F9F8F6] pt-24 flex items-center justify-center">
         <div className="text-center">
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-red-600 mb-4">{error}</p>
@@ -248,7 +248,7 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F8F6] py-12">
+    <div className="min-h-screen bg-[#F9F8F6] pt-24 pb-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -329,8 +329,8 @@ export default function ShopPage() {
             <div className="bg-white rounded-lg p-12 text-center shadow-sm">
               <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-xl text-gray-600 mb-4">
-                {products.length === 0 
-                  ? "No products available yet" 
+                {products.length === 0
+                  ? "No products available yet"
                   : "No products found matching your criteria"}
               </p>
               <button

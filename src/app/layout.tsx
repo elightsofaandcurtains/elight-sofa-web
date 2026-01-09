@@ -3,7 +3,6 @@ import "./globals.css";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import PageTransition from "@/components/PageTransition";
-import FirebaseStatus from "@/components/FirebaseStatus";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CompanyProvider } from "@/contexts/CompanyContext";
 import { COMPANY_CONFIG } from "@/lib/companyConfig";
@@ -32,13 +31,12 @@ export default function RootLayout({
         <CompanyProvider>
           <AuthProvider>
             <ConditionalNavbar />
-            <main className="pt-20">
+            <main>
               <PageTransition>
                 {children}
               </PageTransition>
             </main>
             <ConditionalFooter />
-            <FirebaseStatus />
           </AuthProvider>
         </CompanyProvider>
       </body>

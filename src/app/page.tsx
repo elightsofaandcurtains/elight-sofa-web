@@ -45,9 +45,9 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[80vh] md:h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative h-[100vh] min-h-[600px] w-full flex items-center justify-center overflow-hidden -mt-20">
         <motion.div
-          className="absolute inset-0 z-0"
+          className="absolute inset-0 z-0 w-full h-full"
           initial={{ scale: 1.15 }}
           animate={{ scale: 1 }}
           transition={{ duration: 2, ease: "easeOut" }}
@@ -56,8 +56,9 @@ export default function HomePage() {
             src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1920"
             alt="Luxury Furniture"
             fill
-            className="object-cover"
+            className="object-cover w-full h-full"
             priority
+            sizes="100vw"
           />
           <motion.div
             className="absolute inset-0 bg-black/40"

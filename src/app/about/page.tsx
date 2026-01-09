@@ -4,13 +4,13 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
-import { 
-  Sparkles, 
-  Gem, 
-  Ruler, 
-  ShieldCheck, 
-  Phone, 
-  Mail, 
+import {
+  Sparkles,
+  Gem,
+  Ruler,
+  ShieldCheck,
+  Phone,
+  Mail,
   MapPin,
   ArrowRight,
   Star
@@ -83,16 +83,16 @@ export default function HeritagePage() {
     target: heroRef,
     offset: ["start start", "end start"]
   });
-  
+
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   return (
-    <div className="min-h-screen bg-[#F6F1EB]">
+    <div className="min-h-screen bg-[#F6F1EB] pt-20">
       {/* ==================== HERO SECTION ==================== */}
       <section ref={heroRef} className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* Parallax Background */}
-        <motion.div 
+        <motion.div
           style={{ scale: heroScale }}
           className="absolute inset-0 z-0"
         >
@@ -126,11 +126,11 @@ export default function HeritagePage() {
               <Star className="w-4 h-4 text-[#D4AF37]" />
               <span className="text-[#D4AF37] text-sm font-medium tracking-wider uppercase">Est. 2015 • Surat, Gujarat</span>
             </motion.div>
-            
+
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-serif font-bold text-white mb-6 leading-tight">
               Our Heritage
             </h1>
-            
+
             {/* Gold Animated Underline */}
             <motion.div
               initial={{ width: 0 }}
@@ -138,7 +138,7 @@ export default function HeritagePage() {
               transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
               className="h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent mx-auto mb-8"
             />
-            
+
             <p className="text-xl sm:text-2xl md:text-3xl text-white/90 font-light max-w-3xl mx-auto leading-relaxed">
               A legacy of <span className="text-[#D4AF37]">craftsmanship</span> and <span className="text-[#D4AF37]">excellence</span> spanning generations
             </p>
@@ -182,12 +182,12 @@ export default function HeritagePage() {
               >
                 Our Story
               </motion.span>
-              
+
               <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold text-[#2D2926] mb-8 leading-tight">
                 Crafting Dreams<br />
                 <span className="text-[#D4AF37]">Since 2015</span>
               </h2>
-              
+
               <div className="space-y-6 text-gray-700 text-lg leading-relaxed">
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
@@ -197,7 +197,7 @@ export default function HeritagePage() {
                 >
                   Founded in Surat, Gujarat, <HighlightText>Elight Sofa House</HighlightText> has grown into a trusted name for premium sofas, custom furniture, and elegant interiors. From our workshop at Katargam to homes across the region, every piece reflects dedication, <HighlightText>precision</HighlightText>, and passion for <HighlightText>craftsmanship</HighlightText>.
                 </motion.p>
-                
+
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -206,7 +206,7 @@ export default function HeritagePage() {
                 >
                   We blend traditional techniques with modern design, creating furniture that is not only beautiful but built to last. Our commitment to <HighlightText>trust</HighlightText> and quality has made us the preferred choice for discerning homeowners seeking <HighlightText>custom design</HighlightText> solutions.
                 </motion.p>
-                
+
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -273,9 +273,8 @@ export default function HeritagePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ delay: index * 0.2 }}
-                className={`relative flex items-center mb-12 ${
-                  index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                }`}
+                className={`relative flex items-center mb-12 ${index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
+                  }`}
               >
                 {/* Timeline Dot */}
                 <motion.div
@@ -335,7 +334,7 @@ export default function HeritagePage() {
                 <div className="bg-[#1F1F1F] p-8 rounded-2xl border border-[#D4AF37]/20 hover:border-[#D4AF37] transition-all duration-500 h-full relative overflow-hidden">
                   {/* Glow Effect */}
                   <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/0 to-[#D4AF37]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
+
                   <motion.div
                     whileHover={{ rotate: 360, scale: 1.1 }}
                     transition={{ duration: 0.6 }}
@@ -343,7 +342,7 @@ export default function HeritagePage() {
                   >
                     <feature.icon className="w-8 h-8 text-[#D4AF37]" />
                   </motion.div>
-                  
+
                   <h3 className="text-xl font-semibold text-white mb-3 relative z-10">{feature.title}</h3>
                   <p className="text-gray-400 leading-relaxed relative z-10">{feature.description}</p>
                 </div>
@@ -438,15 +437,15 @@ export default function HeritagePage() {
                 </div>
 
                 <div className="space-y-4">
-                  <motion.div 
+                  <motion.div
                     whileHover={{ x: 5 }}
                     className="flex items-start space-x-4 text-gray-300"
                   >
                     <MapPin className="w-5 h-5 text-[#D4AF37] mt-1 flex-shrink-0" />
                     <p>1/2, Shanti and Soc, Dabholi Rd,<br />Katargam, Surat, Gujarat 395004</p>
                   </motion.div>
-                  
-                  <motion.a 
+
+                  <motion.a
                     href="tel:+919714392926"
                     whileHover={{ x: 5 }}
                     className="flex items-center space-x-4 text-gray-300 hover:text-[#D4AF37] transition-colors"
@@ -454,8 +453,8 @@ export default function HeritagePage() {
                     <Phone className="w-5 h-5 text-[#D4AF37] flex-shrink-0" />
                     <p>+91 97143 92926</p>
                   </motion.a>
-                  
-                  <motion.a 
+
+                  <motion.a
                     href="mailto:elightsofaandcurtains@gmail.com"
                     whileHover={{ x: 5 }}
                     className="flex items-center space-x-4 text-gray-300 hover:text-[#D4AF37] transition-colors"
@@ -463,8 +462,8 @@ export default function HeritagePage() {
                     <Mail className="w-5 h-5 text-[#D4AF37] flex-shrink-0" />
                     <p>elightsofaandcurtains@gmail.com</p>
                   </motion.a>
-                  
-                  <motion.a 
+
+                  <motion.a
                     href="mailto:ravisabhadiya@gmail.com"
                     whileHover={{ x: 5 }}
                     className="flex items-center space-x-4 text-gray-300 hover:text-[#D4AF37] transition-colors"

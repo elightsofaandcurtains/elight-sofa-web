@@ -61,7 +61,7 @@ export default function InquiryPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#F9F8F6] py-20 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F9F8F6] pt-24 pb-20 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -96,7 +96,7 @@ export default function InquiryPage() {
   const { name, address, contact, owner } = COMPANY_CONFIG;
 
   return (
-    <div className="min-h-screen bg-[#F9F8F6] py-20">
+    <div className="min-h-screen bg-[#F9F8F6] pt-24 pb-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

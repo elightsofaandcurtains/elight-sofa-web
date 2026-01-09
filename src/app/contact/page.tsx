@@ -18,7 +18,7 @@ export default function ContactPage() {
   const { name, address, contact, owner, business } = COMPANY_CONFIG;
 
   return (
-    <div className="min-h-screen bg-[#F9F8F6]">
+    <div className="min-h-screen bg-[#F9F8F6] pt-20">
       {/* Hero */}
       <section className="bg-[#2D2926] text-white py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
