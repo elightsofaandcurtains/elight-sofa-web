@@ -196,7 +196,7 @@ export default function Navbar() {
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
               ) : user && profile ? (
-                <div className="relative">
+                <div className="relative z-[100]">
                   <motion.button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     whileHover={{ scale: 1.05 }}
@@ -212,38 +212,45 @@ export default function Navbar() {
 
                   {/* User Dropdown Menu */}
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border z-50">
-                      <div className="p-4 border-b border-gray-100">
-                        <p className="font-medium text-gray-900">{profile.name}</p>
-                        <p className="text-sm text-gray-500">{profile.email}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Shield className="w-3 h-3 text-gray-400" />
-                          <span className="text-xs text-gray-500 capitalize">{profile.role}</span>
+                    <>
+                      {/* Backdrop to close menu */}
+                      <div
+                        className="fixed inset-0 z-[9998]"
+                        onClick={() => setUserMenuOpen(false)}
+                      />
+                      <div className="fixed right-4 top-[70px] w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-[9999]">
+                        <div className="p-4 bg-[#2D2926] rounded-t-xl">
+                          <p className="font-medium text-white text-sm">{profile.name}</p>
+                          <p className="text-xs text-gray-400 mt-1">{profile.email}</p>
+                          <div className="flex items-center gap-1 mt-2">
+                            <Shield className="w-3 h-3 text-[#D4AF37]" />
+                            <span className="text-xs text-[#D4AF37] capitalize">{profile.role}</span>
+                          </div>
+                        </div>
+                        <div className="py-1">
+                          {(profile.role === 'admin' || profile.role === 'manager' || profile.role === 'staff') && (
+                            <Link
+                              href="/admin"
+                              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              <Settings className="w-4 h-4" />
+                              Admin Panel
+                            </Link>
+                          )}
+                          <button
+                            onClick={() => {
+                              handleSignOut();
+                              setUserMenuOpen(false);
+                            }}
+                            className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Sign Out
+                          </button>
                         </div>
                       </div>
-                      <div className="py-2">
-                        {(profile.role === 'admin' || profile.role === 'manager' || profile.role === 'staff') && (
-                          <Link
-                            href="/admin"
-                            className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            <Settings className="w-4 h-4" />
-                            Admin Panel
-                          </Link>
-                        )}
-                        <button
-                          onClick={() => {
-                            handleSignOut();
-                            setUserMenuOpen(false);
-                          }}
-                          className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Sign Out
-                        </button>
-                      </div>
-                    </div>
+                    </>
                   )}
                 </div>
               ) : (

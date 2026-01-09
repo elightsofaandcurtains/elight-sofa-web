@@ -80,7 +80,7 @@ export class EmployeesService {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
-      
+
       console.log('Creating employee with data:', docData);
       const docRef = await addDoc(collection(db, this.COLLECTION), docData);
       console.log('Employee created with ID:', docRef.id);
@@ -113,7 +113,7 @@ export class EmployeesService {
   static async getEmployees(filters: EmployeeFilters = {}): Promise<Employee[]> {
     try {
       const snapshot = await getDocs(collection(db, this.COLLECTION));
-      
+
       let employees: Employee[] = snapshot.docs.map(doc => this.mapDocToEmployee(doc));
 
       // Apply filters
@@ -169,9 +169,17 @@ export class EmployeesService {
         }
       }
 
+      // Filter out undefined values - Firestore doesn't accept undefined
+      const cleanUpdates: Record<string, any> = {};
+      for (const [key, value] of Object.entries(updates)) {
+        if (value !== undefined) {
+          cleanUpdates[key] = value;
+        }
+      }
+
       const docRef = doc(db, this.COLLECTION, employeeId);
       await updateDoc(docRef, {
-        ...updates,
+        ...cleanUpdates,
         updatedAt: serverTimestamp()
       });
     } catch (error) {
@@ -185,7 +193,7 @@ export class EmployeesService {
     try {
       const docRef = doc(db, this.COLLECTION, employeeId);
       await deleteDoc(docRef);
-      
+
       // Also delete related data
       await this.deleteEmployeeRelatedData(employeeId);
     } catch (error) {
@@ -222,8 +230,8 @@ export class EmployeesService {
     try {
       const collectionRef = collection(db, this.COLLECTION);
       console.log('Setting up employees subscription...');
-      
-      return onSnapshot(collectionRef, 
+
+      return onSnapshot(collectionRef,
         (snapshot) => {
           console.log('Employees snapshot received, docs count:', snapshot.docs.length);
           const employees = snapshot.docs.map(doc => {
@@ -246,7 +254,7 @@ export class EmployeesService {
     } catch (error) {
       console.error('Error setting up subscription:', error);
       callback([]);
-      return () => {};
+      return () => { };
     }
   }
 
@@ -281,9 +289,9 @@ export class EmployeesService {
 
   // Update salary and commission
   static async updateSalaryAndCommission(
-    employeeId: string, 
-    baseSalary: number, 
-    netSalary: number, 
+    employeeId: string,
+    baseSalary: number,
+    netSalary: number,
     commission: number
   ): Promise<void> {
     try {
@@ -333,7 +341,7 @@ export class EmployeesService {
   }> {
     try {
       const snapshot = await getDocs(collection(db, this.COLLECTION));
-      
+
       let total = 0;
       let production = 0;
       let design = 0;
@@ -345,12 +353,12 @@ export class EmployeesService {
       snapshot.forEach((doc) => {
         const data = doc.data();
         total++;
-        
+
         if (data.department === 'production') production++;
         else if (data.department === 'design') design++;
         else if (data.department === 'sales') sales++;
         else if (data.department === 'management') management++;
-        
+
         if (data.status === 'on_leave') onLeave++;
         else if (data.status === 'active') active++;
       });
@@ -465,7 +473,7 @@ export class EmployeesService {
   static subscribeToLeaves(callback: (leaves: EmployeeLeave[]) => void): Unsubscribe {
     try {
       const collectionRef = collection(db, this.LEAVES_COLLECTION);
-      
+
       return onSnapshot(collectionRef,
         (snapshot) => {
           const leaves = snapshot.docs.map(doc => ({
@@ -485,7 +493,7 @@ export class EmployeesService {
     } catch (error) {
       console.error('Error setting up leaves subscription:', error);
       callback([]);
-      return () => {};
+      return () => { };
     }
   }
 
@@ -498,10 +506,10 @@ export class EmployeesService {
         ...commission,
         createdAt: serverTimestamp()
       });
-      
+
       // Update employee's total commission
       await this.updateEmployeeCommissionTotal(commission.employeeId);
-      
+
       return docRef.id;
     } catch (error) {
       console.error('Error adding commission:', error);
@@ -514,7 +522,7 @@ export class EmployeesService {
     try {
       const commissions = await this.getEmployeeCommissions(employeeId);
       const totalCommission = commissions.reduce((sum, c) => sum + c.commissionAmount, 0);
-      
+
       const docRef = doc(db, this.COLLECTION, employeeId);
       await updateDoc(docRef, {
         commission: totalCommission,
@@ -561,7 +569,7 @@ export class EmployeesService {
   static subscribeToCommissions(callback: (commissions: EmployeeCommission[]) => void): Unsubscribe {
     try {
       const collectionRef = collection(db, this.COMMISSIONS_COLLECTION);
-      
+
       return onSnapshot(collectionRef,
         (snapshot) => {
           const commissions = snapshot.docs.map(doc => ({
@@ -580,7 +588,7 @@ export class EmployeesService {
     } catch (error) {
       console.error('Error setting up commissions subscription:', error);
       callback([]);
-      return () => {};
+      return () => { };
     }
   }
 
@@ -629,7 +637,7 @@ export class EmployeesService {
   static subscribeToDeductionRecords(callback: (records: LeaveDeductionRecord[]) => void): Unsubscribe {
     try {
       const collectionRef = collection(db, this.DEDUCTIONS_COLLECTION);
-      
+
       return onSnapshot(collectionRef,
         (snapshot) => {
           const records = snapshot.docs.map(doc => ({
@@ -646,7 +654,7 @@ export class EmployeesService {
     } catch (error) {
       console.error('Error setting up deduction records subscription:', error);
       callback([]);
-      return () => {};
+      return () => { };
     }
   }
 

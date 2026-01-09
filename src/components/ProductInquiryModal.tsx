@@ -72,7 +72,7 @@ export default function ProductInquiryModal({ product, isOpen, onClose }: Produc
         email: formData.email || `${formData.phone}@noemail.com`,
         phone: formData.phone,
         interestArea: product.category as any || 'General',
-        budgetRange: '₹25,000 - ₹50,000',
+        budgetRange: '₹50,000 - ₹1,00,000',
         message: formData.message || `Inquiry from ${formData.city}`,
         preferredContact: formData.preferredContact,
         productId: product.id,

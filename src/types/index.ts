@@ -413,7 +413,7 @@ export interface SupplierPayment {
 export type InquiryStatus = 'new' | 'in_progress' | 'closed';
 export type InquiryCategory = 'Sofas' | 'Chairs' | 'Tables' | 'Bedroom' | 'Curtains' | 'General';
 export type PreferredContact = 'phone' | 'whatsapp' | 'email';
-export type BudgetRange = '₹10,000 - ₹25,000' | '₹25,000 - ₹50,000' | '₹50,000 - ₹1,00,000' | '₹1,00,000 - ₹2,00,000' | '₹2,00,000+';
+export type BudgetRange = '₹20,000 - ₹50,000' | '₹50,000 - ₹1,00,000' | '₹1,00,000 - ₹2,00,000' | '₹2,00,000 - ₹5,00,000' | '₹5,00,000 - ₹10,00,000' | '₹10,00,000+';
 
 export interface Inquiry {
   id: string;

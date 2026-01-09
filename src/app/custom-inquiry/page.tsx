@@ -46,11 +46,12 @@ const INTEREST_AREAS: { value: InquiryCategory; label: string }[] = [
 ];
 
 const BUDGET_RANGES: { value: BudgetRange; label: string }[] = [
-  { value: "₹10,000 - ₹25,000", label: "₹10,000 - ₹25,000" },
-  { value: "₹25,000 - ₹50,000", label: "₹25,000 - ₹50,000" },
+  { value: "₹20,000 - ₹50,000", label: "₹20,000 - ₹50,000" },
   { value: "₹50,000 - ₹1,00,000", label: "₹50,000 - ₹1,00,000" },
   { value: "₹1,00,000 - ₹2,00,000", label: "₹1,00,000 - ₹2,00,000" },
-  { value: "₹2,00,000+", label: "₹2,00,000+" },
+  { value: "₹2,00,000 - ₹5,00,000", label: "₹2,00,000 - ₹5,00,000" },
+  { value: "₹5,00,000 - ₹10,00,000", label: "₹5,00,000 - ₹10,00,000" },
+  { value: "₹10,00,000+", label: "₹10,00,000+" },
 ];
 
 const CONTACT_METHODS: { value: PreferredContact; label: string; icon: any }[] = [

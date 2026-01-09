@@ -8,9 +8,11 @@ import {
   Trash2,
   Save,
   Loader2,
+  Info,
 } from "lucide-react";
 import { InvoiceService, InvoiceDocument, InvoiceItem, PaymentMode, OrderType, numberToWords } from "@/lib/firebase/invoices";
 import { getInvoiceCompanyDetails } from "@/lib/companyConfig";
+import { calculateSofaRate, isSofaCategory } from "@/lib/pricingUtils";
 
 interface InvoiceFormProps {
   invoice?: InvoiceDocument | null;
@@ -26,6 +28,7 @@ const defaultItem: Omit<InvoiceItem, 'id'> = {
   category: "Sofa",
   material: "",
   size: "",
+  footPrice: 0,
   quantity: 1,
   rate: 0,
   discount: 0,
@@ -129,6 +132,30 @@ export default function InvoiceForm({ invoice, onSave, onCancel }: InvoiceFormPr
     setItems(items.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
+
+        // Auto-calculate rate for Sofa category based on size and footPrice
+        if (isSofaCategory(updatedItem.category)) {
+          // If category, size, or footPrice changed for Sofa
+          if (field === 'category' || field === 'size' || field === 'footPrice') {
+            const sizeValue = field === 'size' ? value : updatedItem.size;
+            const footPriceValue = field === 'footPrice' ? value : (updatedItem.footPrice || 0);
+
+            if (sizeValue && footPriceValue > 0) {
+              const calculation = calculateSofaRate(sizeValue, footPriceValue);
+              if (calculation.isValid) {
+                updatedItem.rate = calculation.rate;
+              }
+            } else if (!sizeValue || footPriceValue <= 0) {
+              updatedItem.rate = 0;
+            }
+          }
+        }
+
+        // If category changed FROM Sofa to something else, reset footPrice
+        if (field === 'category' && !isSofaCategory(value)) {
+          updatedItem.footPrice = 0;
+        }
+
         // Recalculate row total
         const itemTotal = updatedItem.quantity * updatedItem.rate;
         const discountAmount = updatedItem.discountType === 'percentage'
@@ -182,6 +209,22 @@ export default function InvoiceForm({ invoice, onSave, onCancel }: InvoiceFormPr
         setError("Item rate must be greater than 0");
         return false;
       }
+      // Validate size and footPrice for Sofa category
+      if (isSofaCategory(item.category)) {
+        if (!item.size || !item.size.trim()) {
+          setError("Size is required for Sofa items (e.g., '8ft' or '8 x 6 ft')");
+          return false;
+        }
+        if (!item.footPrice || item.footPrice <= 0) {
+          setError("Foot Price (₹/ft) is required for Sofa items");
+          return false;
+        }
+        const calculation = calculateSofaRate(item.size, item.footPrice);
+        if (!calculation.isValid) {
+          setError(`Invalid size format for Sofa: ${calculation.error}. Use formats like '8ft' or '8 x 6 ft'`);
+          return false;
+        }
+      }
     }
     if (paidAmount < 0) {
       setError("Paid amount cannot be negative");
@@ -210,7 +253,7 @@ export default function InvoiceForm({ invoice, onSave, onCancel }: InvoiceFormPr
           : item.discount;
         const taxableAmount = itemTotal - discountAmount;
         const taxAmt = (taxableAmount * item.taxRate) / 100;
-        
+
         // Create clean item object without undefined values
         const cleanItem: any = {
           id: item.id,
@@ -223,11 +266,12 @@ export default function InvoiceForm({ invoice, onSave, onCancel }: InvoiceFormPr
           taxRate: item.taxRate,
           rowTotal: taxableAmount + taxAmt,
         };
-        
+
         // Only add optional fields if they have values
         if (item.material) cleanItem.material = item.material;
         if (item.size) cleanItem.size = item.size;
-        
+        if (item.footPrice && item.footPrice > 0) cleanItem.footPrice = item.footPrice;
+
         return cleanItem;
       });
 
@@ -472,6 +516,7 @@ export default function InvoiceForm({ invoice, onSave, onCancel }: InvoiceFormPr
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-700">Category</th>
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-700">Material</th>
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-700">Size</th>
+                <th className="text-left py-2 px-2 text-sm font-medium text-gray-700">₹/ft</th>
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-700">Qty *</th>
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-700">Rate (₹) *</th>
                 <th className="text-left py-2 px-2 text-sm font-medium text-gray-700">Discount</th>
@@ -514,13 +559,46 @@ export default function InvoiceForm({ invoice, onSave, onCancel }: InvoiceFormPr
                     />
                   </td>
                   <td className="py-2 px-2">
-                    <input
-                      type="text"
-                      value={item.size || ''}
-                      onChange={(e) => updateItem(item.id, 'size', e.target.value)}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#D4AF37]"
-                      placeholder="Size"
-                    />
+                    <div>
+                      <input
+                        type="text"
+                        value={item.size || ''}
+                        onChange={(e) => updateItem(item.id, 'size', e.target.value)}
+                        className={`w-full px-2 py-1 border rounded text-sm focus:outline-none focus:border-[#D4AF37] ${isSofaCategory(item.category)
+                          ? 'border-[#D4AF37] bg-amber-50'
+                          : 'border-gray-300'
+                          }`}
+                        placeholder={isSofaCategory(item.category) ? "e.g., 8ft or 8x6ft" : "Size"}
+                      />
+                      {isSofaCategory(item.category) && item.size && item.footPrice && item.footPrice > 0 && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Info size={10} className="text-amber-600" />
+                          <span className="text-[10px] text-amber-600">
+                            {(() => {
+                              const calc = calculateSofaRate(item.size, item.footPrice);
+                              return calc.isValid
+                                ? `${calc.totalFeet} ft × ₹${item.footPrice.toLocaleString()}`
+                                : calc.error;
+                            })()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-2 px-2">
+                    {isSofaCategory(item.category) ? (
+                      <input
+                        type="number"
+                        value={item.footPrice || ''}
+                        onChange={(e) => updateItem(item.id, 'footPrice', parseFloat(e.target.value) || 0)}
+                        className="w-20 px-2 py-1 border border-[#D4AF37] bg-amber-50 rounded text-sm focus:outline-none focus:border-[#D4AF37]"
+                        placeholder="₹/ft"
+                        min="0"
+                        step="1"
+                      />
+                    ) : (
+                      <span className="text-gray-400 text-xs">-</span>
+                    )}
                   </td>
                   <td className="py-2 px-2">
                     <input
@@ -532,14 +610,26 @@ export default function InvoiceForm({ invoice, onSave, onCancel }: InvoiceFormPr
                     />
                   </td>
                   <td className="py-2 px-2">
-                    <input
-                      type="number"
-                      value={item.rate}
-                      onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
-                      className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#D4AF37]"
-                      min="0"
-                      step="0.01"
-                    />
+                    <div>
+                      <input
+                        type="number"
+                        value={item.rate}
+                        onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                        className={`w-24 px-2 py-1 border rounded text-sm focus:outline-none ${isSofaCategory(item.category)
+                          ? 'border-gray-200 bg-gray-100 text-gray-600 cursor-not-allowed'
+                          : 'border-gray-300 focus:border-[#D4AF37]'
+                          }`}
+                        min="0"
+                        step="0.01"
+                        disabled={isSofaCategory(item.category)}
+                        title={isSofaCategory(item.category)
+                          ? 'Rate is auto-calculated for Sofa based on size × ₹/ft'
+                          : 'Enter rate'}
+                      />
+                      {isSofaCategory(item.category) && (
+                        <span className="text-[10px] text-gray-500 block mt-1">Auto</span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-2 px-2">
                     <div className="flex">
@@ -644,11 +734,10 @@ export default function InvoiceForm({ invoice, onSave, onCancel }: InvoiceFormPr
             {/* Payment Status Preview */}
             <div className="pt-4 border-t">
               <p className="text-sm text-gray-600">Payment Status:</p>
-              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full mt-1 ${
-                paidAmount >= totalAmount ? 'bg-green-100 text-green-800' :
+              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full mt-1 ${paidAmount >= totalAmount ? 'bg-green-100 text-green-800' :
                 paidAmount > 0 ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
-              }`}>
+                  'bg-red-100 text-red-800'
+                }`}>
                 {paidAmount >= totalAmount ? 'Paid' : paidAmount > 0 ? 'Partial' : 'Pending'}
               </span>
             </div>

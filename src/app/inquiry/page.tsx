@@ -42,7 +42,7 @@ export default function InquiryPage() {
   } = useForm<InquiryFormData>({
     resolver: zodResolver(inquirySchema),
     defaultValues: {
-      budget: 5000,
+      budget: 50000,
       interestArea: "",
       timeline: "",
     },
@@ -293,13 +293,13 @@ export default function InquiryPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Budget Range: ${budgetValue.toLocaleString()} *
+                  Budget Range: ₹{budgetValue.toLocaleString('en-IN')} *
                 </label>
                 <input
                   type="range"
-                  min="1000"
-                  max="50000"
-                  step="1000"
+                  min="20000"
+                  max="1000000"
+                  step="10000"
                   {...register("budget", { valueAsNumber: true })}
                   onChange={(e) =>
                     setValue("budget", Number(e.target.value))
@@ -307,8 +307,8 @@ export default function InquiryPage() {
                   className="w-full h-2 md:h-1"
                 />
                 <div className="flex justify-between text-sm text-gray-600 mt-1">
-                  <span>$1,000</span>
-                  <span>$50,000+</span>
+                  <span>₹20,000</span>
+                  <span>₹10,00,000+</span>
                 </div>
               </div>
 

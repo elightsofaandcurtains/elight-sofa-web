@@ -27,16 +27,18 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning className="overflow-x-hidden">
         <CompanyProvider>
           <AuthProvider>
             <ConditionalNavbar />
-            <main>
-              <PageTransition>
-                {children}
-              </PageTransition>
-            </main>
-            <ConditionalFooter />
+            <div className="overflow-x-hidden w-full">
+              <main>
+                <PageTransition>
+                  {children}
+                </PageTransition>
+              </main>
+              <ConditionalFooter />
+            </div>
           </AuthProvider>
         </CompanyProvider>
       </body>

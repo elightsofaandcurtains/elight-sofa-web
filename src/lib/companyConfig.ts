@@ -17,7 +17,7 @@ export interface CompanyConfig {
   // Basic Information
   name: string;
   tagline: string;
-  
+
   // Address
   address: {
     line1: string;
@@ -27,7 +27,7 @@ export interface CompanyConfig {
     pincode: string;
     full: string;
   };
-  
+
   // Contact Information
   contact: {
     emails: string[];
@@ -35,13 +35,13 @@ export interface CompanyConfig {
     phone: string;
     alternatePhone?: string;
   };
-  
+
   // Owner Information
   owner: {
     name: string;
     designation: string;
   };
-  
+
   // Business Information
   business: {
     startDate: string;
@@ -49,7 +49,7 @@ export interface CompanyConfig {
     gstNumber?: string;
     panNumber?: string;
   };
-  
+
   // Branding
   branding: {
     logo?: string;
@@ -57,7 +57,7 @@ export interface CompanyConfig {
     secondaryColor: string;
     accentColor: string;
   };
-  
+
   // Document Authorization (for payslips, invoices, etc.)
   authorization: {
     companyStamp?: string; // URL/path to company stamp image
@@ -73,7 +73,7 @@ export const COMPANY_CONFIG: CompanyConfig = {
   // Basic Information
   name: "Elight Sofa House",
   tagline: "Premium Furniture & Interior Solutions",
-  
+
   // Address
   address: {
     line1: "1/2, Shanti and Soc",
@@ -85,23 +85,23 @@ export const COMPANY_CONFIG: CompanyConfig = {
       return `${this.line1}, ${this.line2}, ${this.city}, ${this.state} ${this.pincode}`;
     }
   },
-  
+
   // Contact Information
   contact: {
     emails: [
       "elightsofaandcurtains@gmail.com",
-      "ravisabhadiya@gmail.com"
+      "sabhadiyaravi2@gmail.com"
     ],
     primaryEmail: "elightsofaandcurtains@gmail.com",
     phone: "+91 9714392926",
   },
-  
+
   // Owner Information
   owner: {
     name: "Ravi D Sabhadiya",
     designation: "Proprietor"
   },
-  
+
   // Business Information
   business: {
     startDate: "01-05-2015",
@@ -109,7 +109,7 @@ export const COMPANY_CONFIG: CompanyConfig = {
     gstNumber: "", // Add GST number when available
     panNumber: "", // Add PAN number when available
   },
-  
+
   // Branding
   branding: {
     logo: undefined, // Add logo path when available
@@ -117,7 +117,7 @@ export const COMPANY_CONFIG: CompanyConfig = {
     secondaryColor: "#4A4543",
     accentColor: "#D4AF37", // Gold accent
   },
-  
+
   // Document Authorization
   authorization: {
     companyStamp: undefined, // Add company stamp image path when available

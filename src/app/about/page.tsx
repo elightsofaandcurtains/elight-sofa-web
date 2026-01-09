@@ -464,12 +464,12 @@ export default function HeritagePage() {
                   </motion.a>
 
                   <motion.a
-                    href="mailto:ravisabhadiya@gmail.com"
+                    href="mailto:sabhadiyaravi2@gmail.com"
                     whileHover={{ x: 5 }}
                     className="flex items-center space-x-4 text-gray-300 hover:text-[#D4AF37] transition-colors"
                   >
                     <Mail className="w-5 h-5 text-[#D4AF37] flex-shrink-0" />
-                    <p>ravisabhadiya@gmail.com</p>
+                    <p>sabhadiyaravi2@gmail.com</p>
                   </motion.a>
                 </div>
               </div>

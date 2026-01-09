@@ -25,6 +25,7 @@ export interface InvoiceItem {
   category: 'Sofa' | 'Curtain' | 'Pillow' | 'Accessory';
   material?: string;
   size?: string;
+  footPrice?: number; // Per-foot price for Sofa category
   quantity: number;
   rate: number;
   discount: number;
@@ -100,11 +101,11 @@ export function calculatePaymentStatus(paidAmount: number, totalAmount: number):
 export async function generateInvoiceNumber(): Promise<string> {
   const year = new Date().getFullYear();
   const prefix = `INV-${year}-`;
-  
+
   try {
     // Get all invoices and find the highest number (simpler approach, no index needed)
     const snapshot = await getDocs(collection(db, 'invoices'));
-    
+
     let maxNumber = 0;
     snapshot.docs.forEach(doc => {
       const data = doc.data();
@@ -116,7 +117,7 @@ export async function generateInvoiceNumber(): Promise<string> {
         }
       }
     });
-    
+
     const nextNumber = maxNumber + 1;
     return `${prefix}${String(nextNumber).padStart(4, '0')}`;
   } catch (error) {
@@ -133,7 +134,7 @@ export function numberToWords(num: number): string {
   const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
   if (num === 0) return 'Zero Rupees Only';
-  
+
   const convertLessThanThousand = (n: number): string => {
     if (n === 0) return '';
     if (n < 20) return ones[n];
@@ -142,26 +143,26 @@ export function numberToWords(num: number): string {
   };
 
   const roundedNum = Math.round(num);
-  
+
   if (roundedNum < 1000) {
     return convertLessThanThousand(roundedNum) + ' Rupees Only';
   }
-  
+
   if (roundedNum < 100000) {
     const thousands = Math.floor(roundedNum / 1000);
     const remainder = roundedNum % 1000;
-    return convertLessThanThousand(thousands) + ' Thousand' + 
+    return convertLessThanThousand(thousands) + ' Thousand' +
       (remainder ? ' ' + convertLessThanThousand(remainder) : '') + ' Rupees Only';
   }
-  
+
   if (roundedNum < 10000000) {
     const lakhs = Math.floor(roundedNum / 100000);
     const remainder = roundedNum % 100000;
-    return convertLessThanThousand(lakhs) + ' Lakh' + 
+    return convertLessThanThousand(lakhs) + ' Lakh' +
       (remainder >= 1000 ? ' ' + convertLessThanThousand(Math.floor(remainder / 1000)) + ' Thousand' : '') +
       (remainder % 1000 ? ' ' + convertLessThanThousand(remainder % 1000) : '') + ' Rupees Only';
   }
-  
+
   return 'Amount exceeds conversion limit';
 }
 
@@ -175,11 +176,11 @@ export class InvoiceService {
   static async createInvoice(data: Omit<FirebaseInvoice, 'invoiceNumber' | 'paymentStatus' | 'pendingAmount' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       console.log('Creating invoice with data:', JSON.stringify(data, null, 2));
-      
+
       // Generate invoice number
       const invoiceNumber = await generateInvoiceNumber();
       console.log('Generated invoice number:', invoiceNumber);
-      
+
       // Calculate payment status and pending amount
       const pendingAmount = data.totalAmount - data.paidAmount;
       const paymentStatus = calculatePaymentStatus(data.paidAmount, data.totalAmount);
@@ -198,14 +199,14 @@ export class InvoiceService {
 
       console.log('Saving invoice to Firebase...');
       const docRef = await addDoc(collection(db, this.COLLECTION), invoiceDoc);
-      
+
       console.log('✅ Invoice created successfully:', docRef.id, invoiceNumber);
       return docRef.id;
     } catch (error: any) {
       console.error('❌ Error creating invoice:', error);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
-      
+
       if (error.code === 'permission-denied') {
         throw new Error('Permission denied. Please check if you are logged in as admin.');
       }
@@ -219,7 +220,7 @@ export class InvoiceService {
   static async getInvoices(filters: InvoiceFilters = {}): Promise<InvoiceDocument[]> {
     try {
       const snapshot = await getDocs(collection(db, this.COLLECTION));
-      
+
       let invoices: InvoiceDocument[] = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -278,7 +279,7 @@ export class InvoiceService {
   static async updateInvoice(invoiceId: string, updates: Partial<FirebaseInvoice>): Promise<void> {
     try {
       const docRef = doc(db, this.COLLECTION, invoiceId);
-      
+
       // Recalculate status if amounts changed
       if (updates.paidAmount !== undefined || updates.totalAmount !== undefined) {
         const current = await this.getInvoice(invoiceId);
@@ -304,7 +305,7 @@ export class InvoiceService {
         ...updates,
         updatedAt: serverTimestamp()
       });
-      
+
       console.log('Invoice updated:', invoiceId);
     } catch (error) {
       console.error('Error updating invoice:', error);
@@ -332,7 +333,7 @@ export class InvoiceService {
     try {
       const collectionRef = collection(db, this.COLLECTION);
       console.log('Setting up invoices subscription...');
-      
+
       return onSnapshot(collectionRef,
         (snapshot) => {
           console.log('Invoices snapshot received, docs count:', snapshot.docs.length);
@@ -340,7 +341,7 @@ export class InvoiceService {
             id: doc.id,
             ...doc.data()
           } as InvoiceDocument));
-          
+
           // Sort by date descending
           invoices.sort((a, b) => (b.invoiceDate || '').localeCompare(a.invoiceDate || ''));
           callback(invoices);
@@ -353,7 +354,7 @@ export class InvoiceService {
     } catch (error) {
       console.error('Error setting up invoices subscription:', error);
       callback([]);
-      return () => {};
+      return () => { };
     }
   }
 
