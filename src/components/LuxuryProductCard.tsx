@@ -1,0 +1,197 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Star, Send, Package } from "lucide-react";
+import { ProductItem } from "@/lib/firebase/products";
+import { formatCurrency, cn } from "@/lib/utils";
+
+interface LuxuryProductCardProps {
+  product: ProductItem;
+  index?: number;
+}
+
+export default function LuxuryProductCard({ product, index = 0 }: LuxuryProductCardProps) {
+  const router = useRouter();
+
+  const getStockBadge = () => {
+    switch (product.status) {
+      case 'In Stock':
+        return { text: 'In Stock', color: 'bg-emerald-500/90 text-white' };
+      case 'Low Stock':
+        return { text: 'Low Stock', color: 'bg-[#D4AF37]/90 text-white' };
+      case 'Out of Stock':
+        return { text: 'Made to Order', color: 'bg-[#8B8680]/90 text-white' };
+      default:
+        return { text: 'Available', color: 'bg-gray-500/90 text-white' };
+    }
+  };
+
+  const handleInquiry = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/custom-inquiry?product=${encodeURIComponent(product.name)}&category=${encodeURIComponent(product.category)}&id=${product.id}`);
+  };
+
+  const stockBadge = getStockBadge();
+
+  // Get category-specific type label
+  const getTypeLabel = () => {
+    switch (product.category) {
+      case 'Sofas':
+        return product.sofaType;
+      case 'Chairs':
+        return product.chairType;
+      case 'Tables':
+        return product.tableType;
+      case 'Bedroom':
+        return product.bedroomType;
+      case 'Curtains':
+        return product.curtainType;
+      default:
+        return null;
+    }
+  };
+
+  const typeLabel = getTypeLabel();
+
+  return (
+    <Link href={`/product/${product.id}`}>
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: index * 0.08 }}
+        whileHover={{ 
+          scale: 1.02,
+          transition: { duration: 0.3, ease: "easeOut" }
+        }}
+        className="group relative bg-[#FAF9F7] rounded-[20px] overflow-hidden cursor-pointer
+                   shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.12)]
+                   transition-all duration-500 border border-transparent hover:border-[#D4AF37]/30"
+      >
+        {/* Gold accent line on hover */}
+        <motion.div 
+          className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#D4AF37] via-[#E8C547] to-[#D4AF37] z-10"
+          initial={{ scaleX: 0 }}
+          whileHover={{ scaleX: 1 }}
+          transition={{ duration: 0.4 }}
+        />
+
+        {/* Image Container */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-b from-[#F5F4F2] to-[#EBE9E5]">
+          <motion.div
+            className="w-full h-full"
+            whileHover={{ scale: 1.08 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          >
+            {product.imageUrl ? (
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=No+Image';
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Package className="w-16 h-16 text-gray-300" />
+              </div>
+            )}
+          </motion.div>
+
+          {/* Stock Badge */}
+          <div className={cn(
+            "absolute top-4 right-4 px-3 py-1.5 text-xs font-medium tracking-wide rounded-full backdrop-blur-sm",
+            stockBadge.color
+          )}>
+            {stockBadge.text}
+          </div>
+
+          {/* Stock Quantity (if low) */}
+          {product.status === 'Low Stock' && product.stockQty > 0 && (
+            <div className="absolute bottom-4 left-4 px-2 py-1 bg-black/60 text-white text-xs rounded backdrop-blur-sm">
+              Only {product.stockQty} left
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-5 space-y-3">
+          {/* Category */}
+          <p className="text-[11px] uppercase tracking-[0.15em] text-[#8B8680] font-medium">
+            {product.category}
+          </p>
+
+          {/* Product Name */}
+          <h3 className="text-lg font-serif font-semibold text-[#2D2926] leading-tight 
+                         group-hover:text-[#D4AF37] transition-colors duration-300 line-clamp-2">
+            {product.name}
+          </h3>
+
+          {/* Rating */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  size={14}
+                  className={cn(
+                    "transition-colors",
+                    i < Math.floor(product.rating)
+                      ? "fill-[#D4AF37] text-[#D4AF37]"
+                      : "fill-gray-200 text-gray-200"
+                  )}
+                />
+              ))}
+            </div>
+            <span className="text-xs text-[#8B8680]">({product.reviewsCount})</span>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-baseline gap-2 pt-1">
+            <span className="text-xs text-[#8B8680]">Starting from</span>
+            <span className="text-lg font-bold text-[#2D2926]">
+              {formatCurrency(product.price)}
+            </span>
+          </div>
+
+          {/* Minimal Highlights */}
+          <div className="flex flex-wrap gap-2 pt-2">
+            <span className="px-2.5 py-1 bg-[#F0EFED] text-[#5C5856] text-[10px] font-medium rounded-full">
+              {product.material}
+            </span>
+            {typeLabel && (
+              <span className="px-2.5 py-1 bg-[#F0EFED] text-[#5C5856] text-[10px] font-medium rounded-full">
+                {typeLabel}
+              </span>
+            )}
+            {product.curtainFabric && (
+              <span className="px-2.5 py-1 bg-[#F0EFED] text-[#5C5856] text-[10px] font-medium rounded-full">
+                {product.curtainFabric}
+              </span>
+            )}
+          </div>
+
+          {/* Request Inquiry Button */}
+          <motion.button
+            onClick={handleInquiry}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full mt-4 py-3 bg-[#D4AF37] text-white font-medium rounded-xl 
+                     flex items-center justify-center gap-2 hover:bg-[#B8941F] transition-colors
+                     shadow-md hover:shadow-lg"
+          >
+            <Send size={16} />
+            Request Inquiry
+          </motion.button>
+        </div>
+      </motion.div>
+    </Link>
+  );
+}

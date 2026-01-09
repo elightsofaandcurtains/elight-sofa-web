@@ -1,0 +1,140 @@
+// Firestore Security Rules - DEVELOPMENT MODE
+// WARNING: These rules are open for development. Secure before production!
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==================== DEVELOPMENT: OPEN ACCESS ====================
+    // TODO: Replace with secure rules before production deployment
+    
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Suppliers collection
+    match /suppliers/{supplierId} {
+      allow read, write: if true;
+    }
+
+    // Products collection
+    match /products/{productId} {
+      allow read, write: if true;
+    }
+
+    // Categories collection
+    match /categories/{categoryId} {
+      allow read, write: if true;
+    }
+
+    // Employees collection
+    match /employees/{employeeId} {
+      allow read, write: if true;
+    }
+
+    // Employee Leaves collection
+    match /employee_leaves/{leaveId} {
+      allow read, write: if true;
+    }
+
+    // Employee Commissions collection
+    match /employee_commissions/{commissionId} {
+      allow read, write: if true;
+    }
+
+    // Leave Deductions collection
+    match /leave_deductions/{deductionId} {
+      allow read, write: if true;
+    }
+
+    // Salary Audit Logs collection
+    match /salary_audit_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Invoices collection
+    match /invoices/{invoiceId} {
+      allow read, write: if true;
+      
+      match /products/{productId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Payments collection (legacy)
+    match /payments/{paymentId} {
+      allow read, write: if true;
+    }
+
+    // Customer Payments collection
+    match /customer_payments/{paymentId} {
+      allow read, write: if true;
+    }
+
+    // Supplier Payments collection
+    match /supplier_payments/{paymentId} {
+      allow read, write: if true;
+    }
+
+    // Payment History collection
+    match /payment_history/{historyId} {
+      allow read, write: if true;
+    }
+
+    // Inquiries collection
+    match /inquiries/{inquiryId} {
+      allow read, write: if true;
+    }
+
+    // Inquiry notes collection
+    match /inquiry_notes/{noteId} {
+      allow read, write: if true;
+    }
+
+    // Inventory collections
+    match /inventory/{itemId} {
+      allow read, write: if true;
+    }
+
+    match /raw-materials/{materialId} {
+      allow read, write: if true;
+    }
+
+    match /shop-materials/{materialId} {
+      allow read, write: if true;
+    }
+
+    // Stock Management Collections (Firebase-Only)
+    match /raw_materials/{materialId} {
+      allow read, write: if true;
+    }
+
+    match /shop_materials/{materialId} {
+      allow read, write: if true;
+    }
+
+    // Analytics collection
+    match /analytics/{reportId} {
+      allow read, write: if true;
+      
+      match /data/{dataPointId} {
+        allow read, write: if true;
+      }
+    }
+
+    // Company settings collection
+    match /company-settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // Image metadata collection
+    match /image-metadata/{imageId} {
+      allow read, write: if true;
+    }
+
+    // Allow all other collections for development
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
