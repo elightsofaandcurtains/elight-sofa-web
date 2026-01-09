@@ -6,8 +6,8 @@ import { motion } from "framer-motion";
 
 export default function AuthTestPage() {
     const { user, profile, loading, signIn, signOut } = useAuth();
-    const [testEmail, setTestEmail] = useState("admin@elightsofa.com");
-    const [testPassword, setTestPassword] = useState("admin123");
+    const [testEmail, setTestEmail] = useState("");
+    const [testPassword, setTestPassword] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
@@ -75,7 +75,7 @@ export default function AuthTestPage() {
                         <div className="space-y-4">
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <h2 className="text-lg font-semibold text-blue-900 mb-2">Test Login</h2>
-                                <p className="text-sm text-blue-800 mb-4">Use the demo credentials to test authentication:</p>
+                                <p className="text-sm text-blue-800 mb-4">Enter your credentials to test authentication:</p>
 
                                 <div className="space-y-3">
                                     <div>
@@ -85,6 +85,7 @@ export default function AuthTestPage() {
                                             value={testEmail}
                                             onChange={(e) => setTestEmail(e.target.value)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                                            placeholder="Enter your email"
                                         />
                                     </div>
 
@@ -95,6 +96,7 @@ export default function AuthTestPage() {
                                             value={testPassword}
                                             onChange={(e) => setTestPassword(e.target.value)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                                            placeholder="Enter your password"
                                         />
                                     </div>
                                 </div>
@@ -115,11 +117,11 @@ export default function AuthTestPage() {
                             </button>
 
                             <div className="bg-gray-50 rounded-lg p-4">
-                                <h3 className="font-medium text-gray-900 mb-2">Demo Credentials:</h3>
+                                <h3 className="font-medium text-gray-900 mb-2">Need an Account?</h3>
                                 <div className="text-sm text-gray-600 space-y-1">
-                                    <p><strong>Admin:</strong> admin@elightsofa.com / admin123</p>
-                                    <p><strong>Manager:</strong> manager@elightsofa.com / manager123</p>
-                                    <p><strong>Staff:</strong> staff@elightsofa.com / staff123</p>
+                                    <p>• Register a new account to get started</p>
+                                    <p>• Contact admin for role assignments</p>
+                                    <p>• Use valid email and strong password</p>
                                 </div>
                             </div>
                         </div>

@@ -51,15 +51,15 @@ function LoginForm() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#F9F8F6] to-[#E8E6E3] flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-[#F9F8F6] to-[#E8E6E3] flex items-center justify-center p-4 sm:p-6 lg:p-8">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md"
+                className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-md mx-auto"
             >
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-                    <p className="text-gray-600">Sign in to your account</p>
+                <div className="text-center mb-6 sm:mb-8">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+                    <p className="text-gray-600 text-sm sm:text-base">Sign in to your account</p>
                 </div>
 
                 {successMessage && (
@@ -85,17 +85,8 @@ function LoginForm() {
                         <p className="text-red-700 text-sm">{error}</p>
                     </motion.div>
                 )}
-                {/* Demo Credentials */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h3>
-                    <div className="text-xs text-blue-700 space-y-1">
-                        <div><strong>Admin:</strong> admin@elightsofa.com / admin123</div>
-                        <div><strong>Manager:</strong> manager@elightsofa.com / manager123</div>
-                        <div><strong>Staff:</strong> staff@elightsofa.com / staff123</div>
-                    </div>
-                </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
                     {/* Email Field */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -106,7 +97,7 @@ function LoginForm() {
                             <input
                                 {...register("email")}
                                 type="email"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-colors"
+                                className="w-full pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-colors text-sm sm:text-base"
                                 placeholder="Enter your email"
                             />
                         </div>
@@ -125,7 +116,7 @@ function LoginForm() {
                             <input
                                 {...register("password")}
                                 type={showPassword ? "text" : "password"}
-                                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-colors"
+                                className="w-full pl-10 pr-12 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent transition-colors text-sm sm:text-base"
                                 placeholder="Enter your password"
                             />
                             <button

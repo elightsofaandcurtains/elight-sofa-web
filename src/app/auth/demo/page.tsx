@@ -107,7 +107,7 @@ export default function AuthDemoPage() {
                     })}
                 </motion.div>
 
-                {/* Demo Credentials */}
+                {/* System Features */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -115,47 +115,21 @@ export default function AuthDemoPage() {
                     className="bg-white rounded-xl shadow-lg p-8 mb-8"
                 >
                     <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-                        Demo Credentials
+                        Authentication Features
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {demoCredentials.map((cred, index) => (
-                            <motion.div
-                                key={cred.role}
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.4 + index * 0.1 }}
-                                className={`border-2 rounded-lg p-4 ${cred.color}`}
-                            >
-                                <h3 className="font-bold text-lg mb-2">{cred.role}</h3>
-                                <div className="space-y-2 text-sm">
-                                    <div>
-                                        <span className="font-medium">Email:</span>
-                                        <br />
-                                        <code className="bg-white/50 px-2 py-1 rounded text-xs">
-                                            {cred.email}
-                                        </code>
-                                    </div>
-                                    <div>
-                                        <span className="font-medium">Password:</span>
-                                        <br />
-                                        <code className="bg-white/50 px-2 py-1 rounded text-xs">
-                                            {cred.password}
-                                        </code>
-                                    </div>
-                                    <div>
-                                        <span className="font-medium">Permissions:</span>
-                                        <ul className="mt-1 space-y-1">
-                                            {cred.permissions.map((perm, i) => (
-                                                <li key={i} className="flex items-center gap-1 text-xs">
-                                                    <div className="w-1 h-1 bg-current rounded-full"></div>
-                                                    {perm}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
+                        <div className="border-2 rounded-lg p-4 bg-blue-50 border-blue-200">
+                            <h3 className="font-bold text-lg mb-2 text-blue-800">Secure Login</h3>
+                            <p className="text-sm text-blue-700">Firebase authentication with email and password validation</p>
+                        </div>
+                        <div className="border-2 rounded-lg p-4 bg-green-50 border-green-200">
+                            <h3 className="font-bold text-lg mb-2 text-green-800">Role Management</h3>
+                            <p className="text-sm text-green-700">Admin, Manager, and Staff roles with different permissions</p>
+                        </div>
+                        <div className="border-2 rounded-lg p-4 bg-purple-50 border-purple-200">
+                            <h3 className="font-bold text-lg mb-2 text-purple-800">User Registration</h3>
+                            <p className="text-sm text-purple-700">Complete registration system with profile management</p>
+                        </div>
                     </div>
                 </motion.div>
 
@@ -207,11 +181,11 @@ export default function AuthDemoPage() {
                 >
                     <h3 className="text-lg font-semibold text-blue-900 mb-3">How to Test</h3>
                     <ol className="list-decimal list-inside space-y-2 text-blue-800">
-                        <li>Use the demo credentials above to login with different roles</li>
                         <li>Register a new user to see the registration process</li>
-                        <li>Access the admin panel to manage users and roles (admin/manager only)</li>
-                        <li>Try changing user roles from the admin panel</li>
-                        <li>Notice how different roles have different permissions and access levels</li>
+                        <li>Login with your registered credentials</li>
+                        <li>Access the admin panel (requires admin privileges)</li>
+                        <li>Try different user roles and permissions</li>
+                        <li>Notice how different roles have different access levels</li>
                     </ol>
                 </motion.div>
             </div>
