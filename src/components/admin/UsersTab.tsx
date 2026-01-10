@@ -56,23 +56,23 @@ export default function UsersTab() {
   // Data states
   const [users, setUsers] = useState<User[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  
+
   // Filter states
   const [activeRoleFilter, setActiveRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewUser, setViewUser] = useState<{ user: User; supplier?: Supplier } | null>(null);
   const [editUser, setEditUser] = useState<{ user: User; supplier?: Supplier } | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
-  
+
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -87,11 +87,11 @@ export default function UsersTab() {
   useEffect(() => {
     setIsLoading(true);
     let loadingTimeout: NodeJS.Timeout;
-    
+
     loadingTimeout = setTimeout(() => {
       setIsLoading(false);
     }, 3000);
-    
+
     // Subscribe to users
     const unsubUsers = UsersService.subscribeToUsers((data) => {
       console.log('Users data received:', data.length);
@@ -122,11 +122,11 @@ export default function UsersTab() {
   const filteredUsers = users.filter(user => {
     const matchesRole = activeRoleFilter === "All" || user.role.toLowerCase() === activeRoleFilter.toLowerCase();
     const matchesStatus = statusFilter === "All" || user.status.toLowerCase() === statusFilter.toLowerCase();
-    const matchesSearch = searchQuery === "" || 
+    const matchesSearch = searchQuery === "" ||
       user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.phone.includes(searchQuery);
-    
+
     return matchesRole && matchesStatus && matchesSearch;
   });
 
@@ -141,10 +141,20 @@ export default function UsersTab() {
   };
 
   // Handlers
-  const handleAddUser = async (userData: any, supplierData?: any) => {
+  const handleAddUser = async (userData: any, supplierData?: any, adminPassword?: string) => {
     setIsSubmitting(true);
     try {
-      // Create user
+      // Get admin email from localStorage
+      let adminEmail = '';
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('auth_user');
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          adminEmail = parsed.email || '';
+        }
+      }
+
+      // Create user with admin credentials for re-authentication
       const userId = await UsersService.createUser({
         email: userData.email,
         password: userData.password,
@@ -155,7 +165,7 @@ export default function UsersTab() {
         status: userData.status,
         address: userData.address,
         notes: userData.notes
-      });
+      }, adminPassword ? { email: adminEmail, password: adminPassword } : undefined);
 
       // If supplier, create supplier record
       if (userData.role === 'supplier' && supplierData) {
@@ -188,7 +198,7 @@ export default function UsersTab() {
     setIsSubmitting(true);
     try {
       await UsersService.updateUser(userId, userData);
-      
+
       if (supplierData) {
         await UsersService.updateSupplierByUserId(userId, supplierData);
       }
@@ -384,7 +394,7 @@ export default function UsersTab() {
               />
             </div>
           </div>
-          
+
           {/* Role Filter Tabs */}
           <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
             {roleTabs.map((tab) => (
@@ -517,7 +527,7 @@ export default function UsersTab() {
                         >
                           <MoreVertical className="w-5 h-5 text-gray-500" />
                         </button>
-                        
+
                         <AnimatePresence>
                           {actionMenuOpen === user.id && (
                             <motion.div
@@ -606,7 +616,7 @@ export default function UsersTab() {
             isSubmitting={isSubmitting}
           />
         )}
-        
+
         {viewUser && (
           <ViewUserModal
             user={viewUser.user}
@@ -618,7 +628,7 @@ export default function UsersTab() {
             }}
           />
         )}
-        
+
         {editUser && (
           <EditUserModal
             user={editUser.user}
@@ -628,7 +638,7 @@ export default function UsersTab() {
             isSubmitting={isSubmitting}
           />
         )}
-        
+
         {deleteUser && (
           <DeleteUserModal
             user={deleteUser}

@@ -45,6 +45,16 @@ export default function ProductDetailPage() {
         const foundProduct = await ProductService.getProduct(productId);
 
         if (foundProduct) {
+          console.log('Product loaded:', {
+            id: foundProduct.id,
+            name: foundProduct.name,
+            mediaOrder: foundProduct.mediaOrder,
+            mediaOrderLength: foundProduct.mediaOrder?.length,
+            imageUrls: foundProduct.imageUrls,
+            videoUrls: foundProduct.videoUrls,
+            sofaSize: foundProduct.sofaSize,
+            sofaFootPrice: foundProduct.sofaFootPrice,
+          });
           setProduct(foundProduct);
 
           // Fetch related products from same category
@@ -214,13 +224,40 @@ export default function ProductDetailPage() {
 
             {/* Price */}
             <div className="py-4 border-y border-[#E8E6E3]">
-              <p className="text-sm text-[#8B8680] mb-1">Starting from</p>
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl lg:text-4xl font-bold text-[#2D2926]">
-                  {formatCurrency(product.price)}
-                </span>
-              </div>
-              <p className="text-xs text-[#8B8680] mt-2">*Final price may vary based on customization</p>
+              {/* Sofa Per-Foot Pricing */}
+              {product.category === 'Sofas' && product.sofaSize && product.sofaFootPrice ? (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
+                  <div className="flex items-center gap-2 text-amber-700 text-sm font-semibold mb-3">
+                    <Ruler size={18} />
+                    <span>Per-Foot Pricing</span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Size</span>
+                      <span className="text-xl font-bold text-[#2D2926]">{product.sofaSize}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Rate per Foot</span>
+                      <span className="text-xl font-bold text-amber-600">₹{product.sofaFootPrice.toLocaleString('en-IN')}/ft</span>
+                    </div>
+                    <div className="border-t border-amber-200 pt-3 flex items-center justify-between">
+                      <span className="text-gray-700 font-medium">Total Price</span>
+                      <span className="text-3xl font-bold text-[#D4AF37]">{formatCurrency(product.price)}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-amber-600 mt-3 italic">* Sofa prices are calculated based on size in feet</p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-[#8B8680] mb-1">Starting from</p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl lg:text-4xl font-bold text-[#2D2926]">
+                      {formatCurrency(product.price)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#8B8680] mt-2">*Final price may vary based on customization</p>
+                </>
+              )}
             </div>
 
             {/* Availability */}
@@ -368,6 +405,8 @@ export default function ProductDetailPage() {
               images={product.imageUrls}
               mainImage={product.imageUrl}
               productName={product.name}
+              videoUrls={product.videoUrls}
+              mediaOrder={product.mediaOrder}
             />
           </motion.div>
         </div>

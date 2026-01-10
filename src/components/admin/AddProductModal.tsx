@@ -5,9 +5,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { z } from "zod";
-import { X, Link as LinkIcon, AlertCircle, Loader2, Upload, Image as ImageIcon, Check } from "lucide-react";
+import { X, Link as LinkIcon, AlertCircle, Loader2, Upload, Image as ImageIcon, Check, Video, GripVertical } from "lucide-react";
 import { ProductCategory } from "@/lib/firebase/products";
-import { uploadImageToGitHub, uploadMultipleImagesToGitHub, isGitHubConfigured } from "@/lib/githubImageUpload";
+import { uploadImageToGitHub, uploadMultipleImagesToGitHub, isGitHubConfigured, deleteMediaFromGitHub } from "@/lib/githubImageUpload";
 import {
   SOFA_TYPES,
   SEATING_CAPACITY,
@@ -22,6 +22,13 @@ import {
   CURTAIN_FABRICS,
   SIZES,
 } from "@/lib/constants";
+import { calculateSofaRate, isSofaCategory } from "@/lib/pricingUtils";
+
+// Media item type for images and videos
+interface MediaItem {
+  url: string;
+  type: 'image' | 'video';
+}
 
 // Validation schema
 const productSchema = z.object({
@@ -35,6 +42,8 @@ const productSchema = z.object({
   material: z.string().min(1, "Please select a material"),
   imageUrl: z.string().url("Please enter a valid URL").or(z.string().length(0)),
   imageUrls: z.array(z.string()).optional(),
+  videoUrls: z.array(z.string()).optional(),
+  mediaOrder: z.array(z.object({ url: z.string(), type: z.enum(['image', 'video']) })).optional(),
   rating: z.number().min(0).max(5).optional(),
   reviewsCount: z.number().min(0).optional(),
   dimensions: z.string().optional(),
@@ -42,6 +51,8 @@ const productSchema = z.object({
   // Category-specific
   sofaType: z.string().optional(),
   seatingCapacity: z.string().optional(),
+  sofaSize: z.string().optional(), // For per-foot pricing (e.g., "8ft" or "8 x 6 ft")
+  sofaFootPrice: z.number().optional(), // Price per foot for Sofa
   chairType: z.string().optional(),
   tableType: z.string().optional(),
   bedroomType: z.string().optional(),
@@ -61,12 +72,14 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>("");
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [imageMode, setImageMode] = useState<"url" | "upload">("upload");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState<string>("");
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const githubConfigured = isGitHubConfigured();
 
   const {
@@ -84,6 +97,8 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
       rating: 0,
       reviewsCount: 0,
       imageUrls: [],
+      videoUrls: [],
+      mediaOrder: [],
     },
   });
 
@@ -95,6 +110,8 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     // Reset category-specific fields
     setValue("sofaType", undefined);
     setValue("seatingCapacity", undefined);
+    setValue("sofaSize", undefined);
+    setValue("sofaFootPrice", undefined);
     setValue("chairType", undefined);
     setValue("tableType", undefined);
     setValue("bedroomType", undefined);
@@ -109,28 +126,41 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     setImagePreview(url);
   };
 
+  // Update form values when media items change
+  const updateFormMediaValues = (items: MediaItem[]) => {
+    const imageUrls = items.filter(m => m.type === 'image').map(m => m.url);
+    const videoUrls = items.filter(m => m.type === 'video').map(m => m.url);
+
+    console.log('Updating form media values:', {
+      mediaOrder: items,
+      imageUrls,
+      videoUrls,
+      firstImage: imageUrls[0]
+    });
+
+    setValue("imageUrls", imageUrls);
+    setValue("videoUrls", videoUrls);
+    setValue("mediaOrder", items);
+    setValue("imageUrl", imageUrls[0] || "");
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setUploadError("");
     setIsUploading(true);
-    setUploadProgress(`Uploading 0/${files.length}...`);
+    setUploadProgress(`Uploading 0/${files.length} images...`);
 
     try {
-      // Show local previews immediately
-      const localPreviews = Array.from(files).map(file => URL.createObjectURL(file));
-      setImagePreviews(prev => [...prev, ...localPreviews]);
-
       // Upload to GitHub
       const result = await uploadMultipleImagesToGitHub(Array.from(files));
 
       if (result.success && result.urls.length > 0) {
-        const currentUrls = getValues("imageUrls") || [];
-        const newUrls = [...currentUrls, ...result.urls];
-        setValue("imageUrls", newUrls);
-        setValue("imageUrl", newUrls[0]); // Set first image as main
-        setImagePreviews(newUrls);
+        const newMediaItems: MediaItem[] = result.urls.map(url => ({ url, type: 'image' as const }));
+        const updatedMedia = [...mediaItems, ...newMediaItems];
+        setMediaItems(updatedMedia);
+        updateFormMediaValues(updatedMedia);
         setUploadProgress("");
 
         if (result.errors.length > 0) {
@@ -138,31 +168,105 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
         }
       } else {
         setUploadError(result.errors.join(", ") || "Upload failed");
-        setImagePreviews([]);
       }
     } catch (error) {
       setUploadError("Failed to upload images");
-      setImagePreviews([]);
     } finally {
       setIsUploading(false);
       setUploadProgress("");
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     }
   };
 
-  const removeImage = (index: number) => {
-    const currentUrls = getValues("imageUrls") || [];
-    const newUrls = currentUrls.filter((_, i) => i !== index);
-    setValue("imageUrls", newUrls);
-    setValue("imageUrl", newUrls[0] || "");
-    setImagePreviews(newUrls);
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadError("");
+    setIsUploading(true);
+    setUploadProgress(`Uploading 0/${files.length} videos...`);
+
+    try {
+      // Upload videos to GitHub (same process as images)
+      const result = await uploadMultipleImagesToGitHub(Array.from(files));
+
+      if (result.success && result.urls.length > 0) {
+        const newMediaItems: MediaItem[] = result.urls.map(url => ({ url, type: 'video' as const }));
+        const updatedMedia = [...mediaItems, ...newMediaItems];
+        setMediaItems(updatedMedia);
+        updateFormMediaValues(updatedMedia);
+        setUploadProgress("");
+
+        if (result.errors.length > 0) {
+          setUploadError(`Some uploads failed: ${result.errors.join(", ")}`);
+        }
+      } else {
+        setUploadError(result.errors.join(", ") || "Upload failed");
+      }
+    } catch (error) {
+      setUploadError("Failed to upload videos");
+    } finally {
+      setIsUploading(false);
+      setUploadProgress("");
+      if (videoInputRef.current) {
+        videoInputRef.current.value = "";
+      }
+    }
+  };
+
+  const removeMedia = async (index: number) => {
+    const mediaToRemove = mediaItems[index];
+    const updatedMedia = mediaItems.filter((_, i) => i !== index);
+    setMediaItems(updatedMedia);
+    updateFormMediaValues(updatedMedia);
+
+    // Delete from GitHub in background
+    if (mediaToRemove?.url && mediaToRemove.url.includes('raw.githubusercontent.com')) {
+      deleteMediaFromGitHub([mediaToRemove.url]).then(result => {
+        if (result.success) {
+          console.log('Media deleted from GitHub:', mediaToRemove.url);
+        } else {
+          console.error('Failed to delete media from GitHub:', result.error);
+        }
+      });
+    }
+  };
+
+  // Drag and drop handlers for reordering
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newItems = [...mediaItems];
+    const draggedItem = newItems[draggedIndex];
+    newItems.splice(draggedIndex, 1);
+    newItems.splice(index, 0, draggedItem);
+
+    setMediaItems(newItems);
+    updateFormMediaValues(newItems); // Update form values immediately
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    // Form values already updated in handleDragOver
   };
 
   const onSubmit = async (data: ProductFormData) => {
     setIsSubmitting(true);
+    console.log('Form data being submitted:', {
+      sofaSize: data.sofaSize,
+      sofaFootPrice: data.sofaFootPrice,
+      mediaOrder: data.mediaOrder,
+      imageUrls: data.imageUrls,
+      videoUrls: data.videoUrls,
+    });
     try {
       await onSave(data);
     } catch (error) {
@@ -394,6 +498,71 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                             ))}
                           </select>
                         </div>
+
+                        {/* Per-Foot Pricing Section */}
+                        <div className="md:col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                          <h4 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
+                            <span>📐</span> Per-Foot Pricing (Optional)
+                          </h4>
+                          <p className="text-sm text-amber-600 mb-4">
+                            Enter size and price per foot to auto-calculate the product price.
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Size (ft)</label>
+                              <input
+                                {...register("sofaSize")}
+                                type="text"
+                                className="w-full px-4 py-3 border border-amber-300 bg-white rounded-lg focus:outline-none focus:border-[#D4AF37]"
+                                placeholder="e.g., 8ft or 8 x 6 ft"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">Single: 8ft | Area: 8 x 6 ft</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">₹ per Foot</label>
+                              <input
+                                {...register("sofaFootPrice", { valueAsNumber: true })}
+                                type="number"
+                                min="0"
+                                className="w-full px-4 py-3 border border-amber-300 bg-white rounded-lg focus:outline-none focus:border-[#D4AF37]"
+                                placeholder="e.g., 2500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Calculated Price</label>
+                              <div className="w-full px-4 py-3 border border-gray-200 bg-gray-100 rounded-lg text-gray-600">
+                                {(() => {
+                                  const size = watch("sofaSize");
+                                  const footPrice = watch("sofaFootPrice");
+                                  if (size && footPrice && footPrice > 0) {
+                                    const calc = calculateSofaRate(size, footPrice);
+                                    if (calc.isValid) {
+                                      return `₹${calc.rate.toLocaleString('en-IN')} (${calc.totalFeet} ft)`;
+                                    }
+                                    return calc.error || 'Invalid size';
+                                  }
+                                  return 'Enter size & ₹/ft';
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const size = getValues("sofaSize");
+                              const footPrice = getValues("sofaFootPrice");
+                              if (size && footPrice && footPrice > 0) {
+                                const calc = calculateSofaRate(size, footPrice);
+                                if (calc.isValid) {
+                                  setValue("price", calc.rate);
+                                }
+                              }
+                            }}
+                            className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
+                          >
+                            Apply Calculated Price
+                          </button>
+                        </div>
                       </>
                     )}
 
@@ -467,15 +636,15 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                   </div>
                 </div>
 
-                {/* Image Upload / URL Field */}
+                {/* Media Upload Section (Images & Videos) */}
                 <div className="border-t pt-6">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                     <div className="flex items-start space-x-3">
                       <ImageIcon className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                       <div>
-                        <h4 className="font-medium text-blue-800">Product Images</h4>
+                        <h4 className="font-medium text-blue-800">Product Media (Images & Videos)</h4>
                         <p className="text-sm text-blue-600 mt-1">
-                          Upload multiple images (saves to GitHub) or enter a URL.
+                          Upload images and videos. Drag to reorder - first item will be the main display.
                         </p>
                       </div>
                     </div>
@@ -492,7 +661,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                         }`}
                     >
                       <Upload size={18} />
-                      <span>Upload Images</span>
+                      <span>Upload Media</span>
                     </button>
                     <button
                       type="button"
@@ -509,7 +678,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
 
                   {/* Upload Mode */}
                   {imageMode === "upload" && (
-                    <div>
+                    <div className="space-y-4">
                       {!githubConfigured ? (
                         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
                           <p className="font-medium">GitHub not configured</p>
@@ -518,37 +687,65 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                           </p>
                         </div>
                       ) : (
-                        <div
-                          onClick={() => fileInputRef.current?.click()}
-                          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${isUploading
-                            ? "border-[#D4AF37] bg-[#D4AF37]/5"
-                            : "border-gray-300 hover:border-[#D4AF37] hover:bg-gray-50"
-                            }`}
-                        >
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleFileUpload}
-                            className="hidden"
-                          />
-                          {isUploading ? (
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Image Upload */}
+                          <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${isUploading
+                              ? "border-[#D4AF37] bg-[#D4AF37]/5"
+                              : "border-gray-300 hover:border-[#D4AF37] hover:bg-gray-50"
+                              }`}
+                          >
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleFileUpload}
+                              className="hidden"
+                            />
                             <div className="flex flex-col items-center">
-                              <Loader2 size={40} className="text-[#D4AF37] animate-spin mb-2" />
-                              <p className="text-gray-600">{uploadProgress || "Uploading to GitHub..."}</p>
+                              <ImageIcon size={32} className="text-gray-400 mb-2" />
+                              <p className="text-gray-600 text-sm font-medium">Upload Images</p>
+                              <p className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP</p>
                             </div>
-                          ) : (
+                          </div>
+
+                          {/* Video Upload */}
+                          <div
+                            onClick={() => videoInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${isUploading
+                              ? "border-purple-500 bg-purple-50"
+                              : "border-gray-300 hover:border-purple-500 hover:bg-purple-50"
+                              }`}
+                          >
+                            <input
+                              ref={videoInputRef}
+                              type="file"
+                              accept="video/*"
+                              multiple
+                              onChange={handleVideoUpload}
+                              className="hidden"
+                            />
                             <div className="flex flex-col items-center">
-                              <Upload size={40} className="text-gray-400 mb-2" />
-                              <p className="text-gray-600">Click to upload images</p>
-                              <p className="text-sm text-gray-400 mt-1">PNG, JPG, WEBP up to 10MB each • Multiple files allowed</p>
+                              <Video size={32} className="text-gray-400 mb-2" />
+                              <p className="text-gray-600 text-sm font-medium">Upload Videos</p>
+                              <p className="text-xs text-gray-400 mt-1">MP4, WEBM, MOV</p>
                             </div>
-                          )}
+                          </div>
                         </div>
                       )}
+
+                      {/* Upload Progress */}
+                      {isUploading && (
+                        <div className="flex items-center justify-center gap-2 py-3 bg-[#D4AF37]/10 rounded-lg">
+                          <Loader2 size={20} className="text-[#D4AF37] animate-spin" />
+                          <p className="text-gray-600">{uploadProgress || "Uploading..."}</p>
+                        </div>
+                      )}
+
                       {uploadError && (
-                        <p className="mt-2 text-sm text-red-600 flex items-center">
+                        <p className="text-sm text-red-600 flex items-center">
                           <AlertCircle size={14} className="mr-1" />
                           {uploadError}
                         </p>
@@ -575,35 +772,67 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                     </div>
                   )}
 
-                  {/* Image Previews Grid */}
-                  {imagePreviews.length > 0 && (
+                  {/* Media Previews Grid with Drag & Drop */}
+                  {mediaItems.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-sm text-gray-500 mb-2">Uploaded Images ({imagePreviews.length}):</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm text-gray-500">
+                          Media ({mediaItems.length}) - <span className="text-amber-600">Drag to reorder</span>
+                        </p>
+                        <p className="text-xs text-gray-400">First item = Main display</p>
+                      </div>
                       <div className="grid grid-cols-4 gap-3">
-                        {imagePreviews.map((url, index) => (
-                          <div key={index} className="relative group">
-                            <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 border">
-                              <img
-                                src={url}
-                                alt={`Preview ${index + 1}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/128?text=Error';
-                                }}
-                              />
+                        {mediaItems.map((media, index) => (
+                          <div
+                            key={`${media.type}-${index}`}
+                            draggable
+                            onDragStart={() => handleDragStart(index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDragEnd={handleDragEnd}
+                            className={`relative group cursor-move ${draggedIndex === index ? 'opacity-50' : ''}`}
+                          >
+                            <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 border-2 border-transparent hover:border-[#D4AF37] transition-colors">
+                              {media.type === 'image' ? (
+                                <img
+                                  src={media.url}
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-full h-full object-cover pointer-events-none"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/128?text=Error';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-purple-100">
+                                  <Video size={32} className="text-purple-500" />
+                                </div>
+                              )}
                             </div>
+
+                            {/* Drag Handle */}
+                            <div className="absolute top-1 left-1 bg-black/50 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <GripVertical size={14} />
+                            </div>
+
+                            {/* Remove Button */}
                             <button
                               type="button"
-                              onClick={() => removeImage(index)}
+                              onClick={() => removeMedia(index)}
                               className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <X size={14} />
                             </button>
-                            {index === 0 && (
-                              <span className="absolute bottom-1 left-1 bg-[#D4AF37] text-white text-xs px-2 py-0.5 rounded">
-                                Main
+
+                            {/* Type & Position Badge */}
+                            <div className="absolute bottom-1 left-1 flex gap-1">
+                              {index === 0 && (
+                                <span className="bg-[#D4AF37] text-white text-[10px] px-1.5 py-0.5 rounded">
+                                  Main
+                                </span>
+                              )}
+                              <span className={`text-white text-[10px] px-1.5 py-0.5 rounded ${media.type === 'video' ? 'bg-purple-500' : 'bg-blue-500'}`}>
+                                {media.type === 'video' ? '🎬' : '🖼️'}
                               </span>
-                            )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -611,7 +840,7 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
                   )}
 
                   {/* Single URL Preview */}
-                  {imageMode === "url" && imagePreview && imagePreviews.length === 0 && (
+                  {imageMode === "url" && imagePreview && mediaItems.length === 0 && (
                     <div className="mt-4">
                       <p className="text-sm text-gray-500 mb-2">Preview:</p>
                       <div className="w-32 h-32 rounded-lg overflow-hidden bg-gray-100 border">

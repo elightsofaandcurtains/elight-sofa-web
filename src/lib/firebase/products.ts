@@ -62,12 +62,16 @@ export interface ProductItem {
   material: string;
   imageUrl: string; // Main image (for backwards compatibility)
   imageUrls: string[]; // All product images array
+  videoUrls?: string[]; // Product videos array
+  mediaOrder?: { url: string; type: 'image' | 'video' }[]; // Ordered media items
   rating: number;
   reviewsCount: number;
   status: ProductStatus;
   // Category-specific fields
   sofaType?: string;
   seatingCapacity?: string;
+  sofaSize?: string; // For per-foot pricing (e.g., "8ft" or "8 x 6 ft")
+  sofaFootPrice?: number; // Price per foot for Sofa
   chairType?: string;
   tableType?: string;
   bedroomType?: string;
@@ -118,6 +122,19 @@ export class ProductService {
       const stockQty = Number(data.stockQty) || 0;
       const minStock = Number(data.minStock) || 5;
 
+      // Debug log incoming data
+      console.log('🔥 Creating product - Full incoming data:', JSON.stringify(data, null, 2));
+      console.log('🔥 Creating product - Key fields:', {
+        sofaSize: (data as any).sofaSize,
+        sofaFootPrice: (data as any).sofaFootPrice,
+        mediaOrder: (data as any).mediaOrder,
+        mediaOrderLength: (data as any).mediaOrder?.length,
+        imageUrls: (data as any).imageUrls,
+        imageUrlsLength: (data as any).imageUrls?.length,
+        videoUrls: (data as any).videoUrls,
+        videoUrlsLength: (data as any).videoUrls?.length,
+      });
+
       // Build document data, excluding undefined values
       const docData: Record<string, any> = {
         name: data.name,
@@ -137,6 +154,10 @@ export class ProductService {
       // Only add optional fields if they have values (not undefined/empty)
       if (data.sofaType) docData.sofaType = data.sofaType;
       if (data.seatingCapacity) docData.seatingCapacity = data.seatingCapacity;
+      if ((data as any).sofaSize) docData.sofaSize = (data as any).sofaSize;
+      if ((data as any).sofaFootPrice && Number((data as any).sofaFootPrice) > 0) {
+        docData.sofaFootPrice = Number((data as any).sofaFootPrice);
+      }
       if (data.chairType) docData.chairType = data.chairType;
       if (data.tableType) docData.tableType = data.tableType;
       if (data.bedroomType) docData.bedroomType = data.bedroomType;
@@ -146,6 +167,10 @@ export class ProductService {
       if (data.dimensions) docData.dimensions = data.dimensions;
       if (data.description) docData.description = data.description;
       if ((data as any).imageUrls?.length) docData.imageUrls = (data as any).imageUrls;
+      if ((data as any).videoUrls?.length) docData.videoUrls = (data as any).videoUrls;
+      if ((data as any).mediaOrder?.length) docData.mediaOrder = (data as any).mediaOrder;
+
+      console.log('Final docData to save:', docData);
 
       const docRef = await addDoc(collection(db, this.COLLECTION), docData);
       console.log('Product created with ID:', docRef.id);
@@ -198,6 +223,14 @@ export class ProductService {
       const docRef = doc(db, this.COLLECTION, id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
+        const rawData = docSnap.data();
+        console.log('Raw Firebase data for product:', id, {
+          mediaOrder: rawData.mediaOrder,
+          sofaSize: rawData.sofaSize,
+          sofaFootPrice: rawData.sofaFootPrice,
+          imageUrls: rawData.imageUrls,
+          videoUrls: rawData.videoUrls
+        });
         return this.mapDocToProduct(docSnap);
       }
       return null;
@@ -224,6 +257,8 @@ export class ProductService {
       if (updates.material !== undefined) finalUpdates.material = updates.material;
       if (updates.imageUrl !== undefined) finalUpdates.imageUrl = updates.imageUrl;
       if ((updates as any).imageUrls !== undefined) finalUpdates.imageUrls = (updates as any).imageUrls;
+      if ((updates as any).videoUrls !== undefined) finalUpdates.videoUrls = (updates as any).videoUrls;
+      if ((updates as any).mediaOrder !== undefined) finalUpdates.mediaOrder = (updates as any).mediaOrder;
       if (updates.rating !== undefined) finalUpdates.rating = Number(updates.rating);
       if (updates.reviewsCount !== undefined) finalUpdates.reviewsCount = Number(updates.reviewsCount);
       if (updates.dimensions !== undefined) finalUpdates.dimensions = updates.dimensions;
@@ -232,6 +267,8 @@ export class ProductService {
       // Category-specific fields - only add if they have values
       if (updates.sofaType) finalUpdates.sofaType = updates.sofaType;
       if (updates.seatingCapacity) finalUpdates.seatingCapacity = updates.seatingCapacity;
+      if ((updates as any).sofaSize) finalUpdates.sofaSize = (updates as any).sofaSize;
+      if ((updates as any).sofaFootPrice) finalUpdates.sofaFootPrice = Number((updates as any).sofaFootPrice);
       if (updates.chairType) finalUpdates.chairType = updates.chairType;
       if (updates.tableType) finalUpdates.tableType = updates.tableType;
       if (updates.bedroomType) finalUpdates.bedroomType = updates.bedroomType;
@@ -259,9 +296,45 @@ export class ProductService {
   }
 
   // ==================== DELETE PRODUCT ====================
-  static async deleteProduct(id: string): Promise<void> {
+  static async deleteProduct(id: string, deleteMedia: boolean = true): Promise<void> {
     try {
       const docRef = doc(db, this.COLLECTION, id);
+
+      // Get product data first to collect media URLs
+      if (deleteMedia) {
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const mediaUrls: string[] = [];
+
+          // Collect all media URLs
+          if (data.imageUrl) mediaUrls.push(data.imageUrl);
+          if (Array.isArray(data.imageUrls)) mediaUrls.push(...data.imageUrls);
+          if (Array.isArray(data.videoUrls)) mediaUrls.push(...data.videoUrls);
+
+          // Filter only GitHub URLs and remove duplicates
+          const githubUrls = [...new Set(mediaUrls)].filter(url =>
+            url && typeof url === 'string' && url.includes('raw.githubusercontent.com')
+          );
+
+          // Delete media from GitHub
+          if (githubUrls.length > 0) {
+            try {
+              const response = await fetch('/api/upload/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ urls: githubUrls }),
+              });
+              const result = await response.json();
+              console.log('Media deletion result:', result);
+            } catch (mediaError) {
+              console.error('Error deleting media from GitHub:', mediaError);
+              // Continue with product deletion even if media deletion fails
+            }
+          }
+        }
+      }
+
       await deleteDoc(docRef);
       console.log('Product deleted:', id);
     } catch (error) {
@@ -301,6 +374,16 @@ export class ProductService {
     const stockQty = Number(data.stockQty) || 0;
     const minStock = Number(data.minStock) || 5;
 
+    console.log('📦 mapDocToProduct - Raw Firebase data:', {
+      id: doc.id,
+      mediaOrder: data.mediaOrder,
+      mediaOrderLength: data.mediaOrder?.length,
+      sofaSize: data.sofaSize,
+      sofaFootPrice: data.sofaFootPrice,
+      imageUrls: data.imageUrls,
+      videoUrls: data.videoUrls,
+    });
+
     // Build imageUrls array - ensure no duplicates and proper order
     let imageUrls: string[] = [];
 
@@ -322,6 +405,18 @@ export class ProductService {
     // Determine main image: use imageUrl if set, otherwise first from array
     const mainImage = data.imageUrl || imageUrls[0] || '';
 
+    // Build videoUrls array
+    let videoUrls: string[] = [];
+    if (Array.isArray(data.videoUrls) && data.videoUrls.length > 0) {
+      videoUrls = [...data.videoUrls].filter(url => url && typeof url === 'string');
+    }
+
+    // Build mediaOrder array
+    let mediaOrder: { url: string; type: 'image' | 'video' }[] = [];
+    if (Array.isArray(data.mediaOrder) && data.mediaOrder.length > 0) {
+      mediaOrder = data.mediaOrder.filter((m: any) => m && m.url && m.type);
+    }
+
     return {
       id: doc.id,
       name: data.name || '',
@@ -332,12 +427,16 @@ export class ProductService {
       material: data.material || '',
       imageUrl: mainImage,
       imageUrls: imageUrls,
+      videoUrls: videoUrls,
+      mediaOrder: mediaOrder,
       rating: Number(data.rating) || 0,
       reviewsCount: Number(data.reviewsCount) || 0,
       status: this.calculateStatus(stockQty, minStock),
       // Category-specific
       sofaType: data.sofaType,
       seatingCapacity: data.seatingCapacity,
+      sofaSize: data.sofaSize,
+      sofaFootPrice: data.sofaFootPrice ? Number(data.sofaFootPrice) : undefined,
       chairType: data.chairType,
       tableType: data.tableType,
       bedroomType: data.bedroomType,

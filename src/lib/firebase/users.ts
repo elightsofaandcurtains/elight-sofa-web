@@ -17,7 +17,7 @@ import {
   Unsubscribe,
   writeBatch
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../../../firebase.config';
 import { User, Supplier } from '../../types';
 
@@ -88,9 +88,9 @@ export class UsersService {
       collection(db, this.USERS_COLLECTION),
       orderBy('createdAt', 'desc')
     );
-    
+
     return onSnapshot(q, (snapshot) => {
-      const users = snapshot.docs.map(doc => 
+      const users = snapshot.docs.map(doc =>
         this.mapFirebaseToUser(doc.id, doc.data() as FirebaseUser)
       );
       callback(users);
@@ -131,6 +131,7 @@ export class UsersService {
   }
 
   // Create new user with optional Firebase Auth
+  // This creates the user in Firebase Auth AND re-authenticates the admin to prevent logout
   static async createUser(userData: {
     email: string;
     password?: string;
@@ -141,12 +142,15 @@ export class UsersService {
     status?: 'active' | 'inactive' | 'blocked';
     address?: string;
     notes?: string;
-  }): Promise<string> {
+  }, adminCredentials?: { email: string; password: string }): Promise<string> {
     try {
       let userId: string;
 
       // Create Firebase Auth user if password provided
       if (userData.password) {
+        console.log("🔐 Creating Firebase Auth user for:", userData.email);
+
+        // Create the new user (this will sign in as the new user automatically)
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           userData.email,
@@ -154,6 +158,20 @@ export class UsersService {
         );
         userId = userCredential.user.uid;
         await updateProfile(userCredential.user, { displayName: userData.fullName });
+
+        console.log("✅ Firebase Auth user created:", userId);
+
+        // Now sign back in as admin if we have admin credentials
+        if (adminCredentials && adminCredentials.email && adminCredentials.password) {
+          console.log("🔄 Re-authenticating admin...");
+          try {
+            await signInWithEmailAndPassword(auth, adminCredentials.email, adminCredentials.password);
+            console.log("✅ Admin re-authenticated successfully");
+          } catch (reAuthError) {
+            console.error("⚠️ Failed to re-authenticate admin:", reAuthError);
+            // Don't throw - user was created successfully
+          }
+        }
       } else {
         // Generate a random ID for users without auth
         userId = doc(collection(db, this.USERS_COLLECTION)).id;
@@ -174,6 +192,8 @@ export class UsersService {
       };
 
       await setDoc(doc(db, this.USERS_COLLECTION, userId), userDoc);
+
+      console.log("✅ User document created in Firestore:", userId);
       return userId;
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -213,10 +233,10 @@ export class UsersService {
   static async deleteUser(userId: string): Promise<void> {
     try {
       const batch = writeBatch(db);
-      
+
       // Delete user document
       batch.delete(doc(db, this.USERS_COLLECTION, userId));
-      
+
       // Check and delete supplier document if exists
       const supplierQuery = query(
         collection(db, this.SUPPLIERS_COLLECTION),
@@ -257,9 +277,9 @@ export class UsersService {
       collection(db, this.SUPPLIERS_COLLECTION),
       orderBy('createdAt', 'desc')
     );
-    
+
     return onSnapshot(q, (snapshot) => {
-      const suppliers = snapshot.docs.map(doc => 
+      const suppliers = snapshot.docs.map(doc =>
         this.mapFirebaseToSupplier(doc.id, doc.data() as FirebaseSupplier)
       );
       callback(suppliers);

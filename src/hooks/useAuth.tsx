@@ -106,28 +106,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
-        if (useFirebase) {
-            // Use Firebase authentication
-            const unsubscribe = AuthService.onAuthStateChange((user, profile) => {
-                setUser(user);
-                setProfile(profile);
-                setLoading(false);
-            });
-            return unsubscribe;
-        } else {
-            // Load dynamic users and check for stored auth state
-            loadDynamicUsers();
+        let isMounted = true;
 
-            if (typeof window !== 'undefined') {
-                const storedUser = localStorage.getItem('auth_user');
-                const storedProfile = localStorage.getItem('auth_profile');
+        // First, immediately restore from localStorage to prevent logout flash
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem('auth_user');
+            const storedProfile = localStorage.getItem('auth_profile');
 
-                if (storedUser && storedProfile) {
+            if (storedUser && storedProfile) {
+                try {
                     const mockUser = JSON.parse(storedUser);
                     setUser(mockUser as User);
                     setProfile(JSON.parse(storedProfile));
+                    setLoading(false); // Set loading false immediately if we have localStorage data
+                    console.log("✅ Immediately restored user from localStorage");
+                } catch (error) {
+                    console.error('Error parsing stored auth:', error);
                 }
             }
+        }
+
+        if (useFirebase) {
+            // Use Firebase authentication
+            const unsubscribe = AuthService.onAuthStateChange((firebaseUser, firebaseProfile) => {
+                if (!isMounted) return;
+
+                console.log("🔥 Firebase auth state changed:", {
+                    hasUser: !!firebaseUser,
+                    hasProfile: !!firebaseProfile,
+                });
+
+                if (firebaseUser && firebaseProfile) {
+                    setUser(firebaseUser);
+                    setProfile(firebaseProfile);
+                    // Save to localStorage for persistence
+                    if (typeof window !== 'undefined') {
+                        // Only save serializable user data
+                        const serializableUser = {
+                            uid: firebaseUser.uid,
+                            email: firebaseUser.email,
+                            displayName: firebaseUser.displayName,
+                            photoURL: firebaseUser.photoURL,
+                        };
+                        localStorage.setItem('auth_user', JSON.stringify(serializableUser));
+                        localStorage.setItem('auth_profile', JSON.stringify(firebaseProfile));
+                        console.log("✅ Saved user to localStorage from auth state change");
+                    }
+                    setLoading(false);
+                } else {
+                    // Firebase returned null - check if we should keep localStorage user
+                    if (typeof window !== 'undefined') {
+                        const storedUser = localStorage.getItem('auth_user');
+                        const storedProfile = localStorage.getItem('auth_profile');
+
+                        if (storedUser && storedProfile) {
+                            // Keep the localStorage user - don't logout
+                            // This handles the brief null state during login/navigation
+                            console.log("⚠️ Firebase returned null but localStorage has user - keeping session");
+                            // Don't change user/profile state - keep what we have
+                            setLoading(false);
+                        } else {
+                            // No localStorage data - user is actually logged out
+                            console.log("🚪 No localStorage data - user is logged out");
+                            setUser(null);
+                            setProfile(null);
+                            setLoading(false);
+                        }
+                    } else {
+                        setUser(null);
+                        setProfile(null);
+                        setLoading(false);
+                    }
+                }
+            });
+
+            return () => {
+                isMounted = false;
+                unsubscribe();
+            };
+        } else {
+            // Load dynamic users
+            loadDynamicUsers();
             setLoading(false);
         }
     }, [useFirebase]);
@@ -141,6 +200,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const result = await AuthService.signIn(email, password);
                 setUser(result.user);
                 setProfile(result.profile);
+
+                // Save serializable user data to localStorage
+                if (typeof window !== 'undefined') {
+                    const serializableUser = {
+                        uid: result.user.uid,
+                        email: result.user.email,
+                        displayName: result.user.displayName,
+                        photoURL: result.user.photoURL,
+                    };
+                    localStorage.setItem('auth_user', JSON.stringify(serializableUser));
+                    localStorage.setItem('auth_profile', JSON.stringify(result.profile));
+                    console.log("✅ Saved user to localStorage after signIn");
+                }
             } else {
                 // Use mock authentication
                 await new Promise(resolve => setTimeout(resolve, 1000));
@@ -239,15 +311,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(true);
 
         try {
+            // Clear localStorage FIRST before Firebase signOut
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('auth_user');
+                localStorage.removeItem('auth_profile');
+                console.log("🗑️ Cleared localStorage auth data");
+            }
+
             if (useFirebase) {
                 // Use Firebase authentication
                 await AuthService.signOut();
-            } else {
-                // Use mock authentication
-                if (typeof window !== 'undefined') {
-                    localStorage.removeItem('auth_user');
-                    localStorage.removeItem('auth_profile');
-                }
             }
 
             setUser(null);

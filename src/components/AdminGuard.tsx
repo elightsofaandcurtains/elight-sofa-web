@@ -25,18 +25,37 @@ export default function AdminGuard({
     useEffect(() => {
         if (loading) return;
 
-        // Check if user is authenticated
-        if (!user) {
+        // Check if user is authenticated - also check localStorage as backup
+        let currentUser = user;
+        let currentProfile = profile;
+
+        if (!currentUser && typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem('auth_user');
+            const storedProfile = localStorage.getItem('auth_profile');
+            if (storedUser && storedProfile) {
+                try {
+                    currentUser = JSON.parse(storedUser);
+                    currentProfile = JSON.parse(storedProfile);
+                    console.log("🔒 AdminGuard: Using localStorage user as backup");
+                } catch (e) {
+                    console.error('Error parsing stored auth in AdminGuard:', e);
+                }
+            }
+        }
+
+        if (!currentUser) {
             router.push("/auth/login?redirect=/admin");
             return;
         }
 
         // Check if user has required roles
-        const hasRequiredRole = requiredRoles.length === 0 || hasAnyRole(requiredRoles);
+        const userRole = currentProfile?.role;
+        const hasRequiredRole = requiredRoles.length === 0 || (userRole && requiredRoles.includes(userRole));
 
         // Check if user has required permissions
+        const userPermissions = currentProfile?.permissions || [];
         const hasRequiredPermissions = requiredPermissions.length === 0 ||
-            requiredPermissions.every(permission => hasPermission(permission));
+            requiredPermissions.every(permission => userPermissions.includes(permission));
 
         if (hasRequiredRole && hasRequiredPermissions) {
             setIsAuthorized(true);
@@ -45,7 +64,7 @@ export default function AdminGuard({
         }
 
         setAuthChecked(true);
-    }, [user, profile, loading, hasRole, hasAnyRole, hasPermission, requiredRoles, requiredPermissions, router]);
+    }, [user, profile, loading, requiredRoles, requiredPermissions, router]);
 
     // Show loading spinner while checking authentication
     if (loading || !authChecked) {

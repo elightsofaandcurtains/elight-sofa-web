@@ -21,6 +21,7 @@ import {
   CURTAIN_FABRICS,
   SIZES,
 } from "@/lib/constants";
+import { calculateSofaRate } from "@/lib/pricingUtils";
 
 const productSchema = z.object({
   name: z.string().min(2, "Product name must be at least 2 characters"),
@@ -37,6 +38,8 @@ const productSchema = z.object({
   description: z.string().optional(),
   sofaType: z.string().optional(),
   seatingCapacity: z.string().optional(),
+  sofaSize: z.string().optional(),
+  sofaFootPrice: z.number().optional(),
   chairType: z.string().optional(),
   tableType: z.string().optional(),
   bedroomType: z.string().optional(),
@@ -81,6 +84,8 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
       description: product.description || "",
       sofaType: product.sofaType,
       seatingCapacity: product.seatingCapacity,
+      sofaSize: (product as any).sofaSize || "",
+      sofaFootPrice: (product as any).sofaFootPrice || 0,
       chairType: product.chairType,
       tableType: product.tableType,
       bedroomType: product.bedroomType,
@@ -319,6 +324,71 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
                             <option key={cap} value={cap}>{cap}</option>
                           ))}
                         </select>
+                      </div>
+
+                      {/* Per-Foot Pricing Section */}
+                      <div className="md:col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <h4 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
+                          <span>📐</span> Per-Foot Pricing (Optional)
+                        </h4>
+                        <p className="text-sm text-amber-600 mb-4">
+                          Enter size and price per foot to auto-calculate the product price.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Size (ft)</label>
+                            <input
+                              {...register("sofaSize")}
+                              type="text"
+                              className="w-full px-4 py-3 border border-amber-300 bg-white rounded-lg focus:outline-none focus:border-[#D4AF37]"
+                              placeholder="e.g., 8ft or 8 x 6 ft"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Single: 8ft | Area: 8 x 6 ft</p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">₹ per Foot</label>
+                            <input
+                              {...register("sofaFootPrice", { valueAsNumber: true })}
+                              type="number"
+                              min="0"
+                              className="w-full px-4 py-3 border border-amber-300 bg-white rounded-lg focus:outline-none focus:border-[#D4AF37]"
+                              placeholder="e.g., 2500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Calculated Price</label>
+                            <div className="w-full px-4 py-3 border border-gray-200 bg-gray-100 rounded-lg text-gray-600">
+                              {(() => {
+                                const size = watch("sofaSize");
+                                const footPrice = watch("sofaFootPrice");
+                                if (size && footPrice && footPrice > 0) {
+                                  const calc = calculateSofaRate(size, footPrice);
+                                  if (calc.isValid) {
+                                    return `₹${calc.rate.toLocaleString('en-IN')} (${calc.totalFeet} ft)`;
+                                  }
+                                  return calc.error || 'Invalid size';
+                                }
+                                return 'Enter size & ₹/ft';
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const size = watch("sofaSize");
+                            const footPrice = watch("sofaFootPrice");
+                            if (size && footPrice && footPrice > 0) {
+                              const calc = calculateSofaRate(size, footPrice);
+                              if (calc.isValid) {
+                                setValue("price", calc.rate);
+                              }
+                            }
+                          }}
+                          className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
+                        >
+                          Apply Calculated Price
+                        </button>
                       </div>
                     </>
                   )}

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 interface AddUserModalProps {
   onClose: () => void;
-  onSave: (userData: any, supplierData?: any) => void;
+  onSave: (userData: any, supplierData?: any, adminPassword?: string) => void;
   isSubmitting: boolean;
 }
 
@@ -38,6 +38,9 @@ export default function AddUserModal({ onClose, onSave, isSubmitting }: AddUserM
     notes: ''
   });
 
+  // Admin password for re-authentication after creating user
+  const [adminPassword, setAdminPassword] = useState('');
+
   // Supplier-specific fields
   const [supplierData, setSupplierData] = useState({
     supplierName: '',
@@ -55,12 +58,13 @@ export default function AddUserModal({ onClose, onSave, isSubmitting }: AddUserM
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email format';
     if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
     if (!formData.password || formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (!adminPassword || adminPassword.length < 6) newErrors.adminPassword = 'Enter your admin password to stay logged in';
 
     // Supplier validation
     if (formData.role === 'supplier') {
@@ -81,9 +85,9 @@ export default function AddUserModal({ onClose, onSave, isSubmitting }: AddUserM
         ...supplierData,
         phone: supplierData.phone || formData.phone,
         email: supplierData.email || formData.email
-      });
+      }, adminPassword);
     } else {
-      onSave(formData);
+      onSave(formData, undefined, adminPassword);
     }
   };
 
@@ -137,7 +141,7 @@ export default function AddUserModal({ onClose, onSave, isSubmitting }: AddUserM
           {/* Common Fields */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-900 border-b pb-2">Basic Information</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
@@ -209,6 +213,22 @@ export default function AddUserModal({ onClose, onSave, isSubmitting }: AddUserM
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Your Admin Password *</label>
+                <input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className={cn(
+                    "w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent",
+                    errors.adminPassword ? "border-red-500" : "border-gray-300"
+                  )}
+                  placeholder="Enter your password to stay logged in"
+                />
+                {errors.adminPassword && <p className="text-red-500 text-xs mt-1">{errors.adminPassword}</p>}
+                <p className="text-xs text-gray-500 mt-1">Required to keep you logged in after creating user</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select
                   value={formData.status}
@@ -277,7 +297,7 @@ export default function AddUserModal({ onClose, onSave, isSubmitting }: AddUserM
                   <Truck className="w-4 h-4 text-purple-600" />
                   Supplier Details
                 </h3>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Supplier Name (Company) *</label>

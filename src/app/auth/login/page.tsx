@@ -24,9 +24,9 @@ function LoginForm() {
 
     const router = useRouter();
     const searchParams = useSearchParams();
-    const redirectTo = searchParams?.get("redirect") || "/admin";
+    const redirectTo = searchParams?.get("redirect");
     const successMessage = searchParams?.get("message");
-    const { signIn } = useAuth();
+    const { signIn, profile } = useAuth();
 
     const {
         register,
@@ -42,7 +42,39 @@ function LoginForm() {
 
         try {
             await signIn(data.email, data.password);
-            router.push(redirectTo);
+
+            // Small delay to ensure localStorage is set before redirect
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Get the profile from localStorage to check role
+            const storedProfile = localStorage.getItem('auth_profile');
+            let userRole = 'customer';
+            if (storedProfile) {
+                try {
+                    const parsed = JSON.parse(storedProfile);
+                    userRole = parsed.role || 'customer';
+                } catch (e) { }
+            }
+
+            console.log("🔐 Login successful, role:", userRole, "redirectTo:", redirectTo);
+
+            // Redirect based on role
+            if (redirectTo) {
+                // If there's a specific redirect, check if user has access
+                if (redirectTo.startsWith('/admin') && !['admin', 'manager'].includes(userRole)) {
+                    // Non-admin trying to access admin - redirect to home
+                    router.push('/');
+                } else {
+                    router.push(redirectTo);
+                }
+            } else {
+                // No specific redirect - go based on role
+                if (['admin', 'manager'].includes(userRole)) {
+                    router.push('/admin');
+                } else {
+                    router.push('/');
+                }
+            }
         } catch (error: any) {
             setError(error.message || "Login failed. Please try again.");
         } finally {

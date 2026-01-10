@@ -1,113 +1,141 @@
 "use client";
 
-import { useState, useCallback, useMemo, memo } from "react";
+import { useState, useCallback, useMemo, memo, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Package, ZoomIn } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Package, ZoomIn, Play, Pause, Volume2, VolumeX, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface MediaItem {
+    url: string;
+    type: 'image' | 'video';
+}
 
 interface ProductImageGalleryProps {
     images: string[];
     productName: string;
     mainImage?: string;
+    videoUrls?: string[];
+    mediaOrder?: MediaItem[];
 }
 
 // Maximum thumbnails to show before "+X more"
 const MAX_VISIBLE_THUMBNAILS = 5;
 
-/**
- * ProductImageGallery Component
- * 
- * Features:
- * - Main image viewer with selected image display
- * - Thumbnail row with max 5 visible + "+X more" indicator
- * - Lightbox modal for full gallery view
- * - Keyboard navigation support
- * - Lazy loading for performance
- * - No duplicate images
- * - Responsive design
- */
-function ProductImageGallery({ images, productName, mainImage }: ProductImageGalleryProps) {
-    // Deduplicate and normalize images array
-    const normalizedImages = useMemo(() => {
-        const uniqueImages: string[] = [];
+function ProductImageGallery({ images, productName, mainImage, videoUrls = [], mediaOrder = [] }: ProductImageGalleryProps) {
+    // Debug log
+    console.log('ProductImageGallery received:', {
+        productName,
+        mediaOrder,
+        mediaOrderLength: mediaOrder?.length,
+        images,
+        videoUrls
+    });
+
+    // Build media items array from props - PRIORITIZE mediaOrder
+    const mediaItems = useMemo(() => {
+        const items: MediaItem[] = [];
         const seen = new Set<string>();
 
-        // If mainImage provided and valid, add it first
+        // If mediaOrder is provided and has items, use it as the primary source
+        if (mediaOrder && Array.isArray(mediaOrder) && mediaOrder.length > 0) {
+            console.log('Using mediaOrder for gallery:', mediaOrder);
+            mediaOrder.forEach(item => {
+                if (item && item.url && !seen.has(item.url)) {
+                    items.push({ url: item.url, type: item.type });
+                    seen.add(item.url);
+                }
+            });
+            return items; // Return early - only use mediaOrder
+        }
+
+        // Fallback: Build from images and videos if no mediaOrder
+        console.log('No mediaOrder, building from images/videos');
         if (mainImage && !seen.has(mainImage)) {
-            uniqueImages.push(mainImage);
+            items.push({ url: mainImage, type: 'image' });
             seen.add(mainImage);
         }
 
-        // Add remaining images, avoiding duplicates
         images.forEach(img => {
-            if (img && typeof img === 'string' && !seen.has(img)) {
-                uniqueImages.push(img);
+            if (img && !seen.has(img)) {
+                items.push({ url: img, type: 'image' });
                 seen.add(img);
             }
         });
 
-        return uniqueImages;
-    }, [images, mainImage]);
+        videoUrls.forEach(vid => {
+            if (vid && !seen.has(vid)) {
+                items.push({ url: vid, type: 'video' });
+                seen.add(vid);
+            }
+        });
+
+        return items;
+    }, [images, mainImage, videoUrls, mediaOrder]);
 
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     const [imageLoadErrors, setImageLoadErrors] = useState<Set<number>>(new Set());
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
+    const videoRef = useRef<HTMLVideoElement>(null);
 
-    // Calculate visible thumbnails and remaining count
     const visibleThumbnails = useMemo(() => {
-        return normalizedImages.slice(0, MAX_VISIBLE_THUMBNAILS);
-    }, [normalizedImages]);
+        return mediaItems.slice(0, MAX_VISIBLE_THUMBNAILS);
+    }, [mediaItems]);
 
     const remainingCount = useMemo(() => {
-        return Math.max(0, normalizedImages.length - MAX_VISIBLE_THUMBNAILS);
-    }, [normalizedImages]);
+        return Math.max(0, mediaItems.length - MAX_VISIBLE_THUMBNAILS);
+    }, [mediaItems]);
 
-    // Get current selected image
-    const currentImage = normalizedImages[selectedIndex] || '';
+    const currentMedia = mediaItems[selectedIndex];
 
-    // Handle thumbnail click
     const handleThumbnailClick = useCallback((index: number) => {
         setSelectedIndex(index);
+        setIsPlaying(false);
     }, []);
 
-    // Handle "+X more" click - opens lightbox
     const handleMoreClick = useCallback(() => {
         setIsLightboxOpen(true);
     }, []);
 
-    // Navigate to previous image
     const goToPrevious = useCallback(() => {
-        setSelectedIndex(prev =>
-            prev === 0 ? normalizedImages.length - 1 : prev - 1
-        );
-    }, [normalizedImages.length]);
+        setSelectedIndex(prev => prev === 0 ? mediaItems.length - 1 : prev - 1);
+        setIsPlaying(false);
+    }, [mediaItems.length]);
 
-    // Navigate to next image
     const goToNext = useCallback(() => {
-        setSelectedIndex(prev =>
-            prev === normalizedImages.length - 1 ? 0 : prev + 1
-        );
-    }, [normalizedImages.length]);
+        setSelectedIndex(prev => prev === mediaItems.length - 1 ? 0 : prev + 1);
+        setIsPlaying(false);
+    }, [mediaItems.length]);
 
-    // Handle keyboard navigation
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'ArrowLeft') {
-            goToPrevious();
-        } else if (e.key === 'ArrowRight') {
-            goToNext();
-        } else if (e.key === 'Escape') {
-            setIsLightboxOpen(false);
-        }
+        if (e.key === 'ArrowLeft') goToPrevious();
+        else if (e.key === 'ArrowRight') goToNext();
+        else if (e.key === 'Escape') setIsLightboxOpen(false);
     }, [goToPrevious, goToNext]);
 
-    // Handle image load error
     const handleImageError = useCallback((index: number) => {
         setImageLoadErrors(prev => new Set(prev).add(index));
     }, []);
 
-    // If no images, show placeholder
-    if (normalizedImages.length === 0) {
+    const togglePlay = useCallback(() => {
+        if (!videoRef.current) return;
+        if (isPlaying) {
+            videoRef.current.pause();
+        } else {
+            videoRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+    }, [isPlaying]);
+
+    const toggleMute = useCallback(() => {
+        if (!videoRef.current) return;
+        videoRef.current.muted = !isMuted;
+        setIsMuted(!isMuted);
+    }, [isMuted]);
+
+    if (mediaItems.length === 0) {
         return (
             <div className="space-y-4">
                 <div className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-[#F5F4F2] to-[#E8E6E3] shadow-2xl flex items-center justify-center">
@@ -119,10 +147,9 @@ function ProductImageGallery({ images, productName, mainImage }: ProductImageGal
 
     return (
         <div className="space-y-4" onKeyDown={handleKeyDown} tabIndex={0}>
-            {/* Main Image Viewer */}
+            {/* Main Media Viewer */}
             <motion.div
-                className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-[#F5F4F2] to-[#E8E6E3] shadow-2xl cursor-zoom-in group"
-                onClick={() => setIsLightboxOpen(true)}
+                className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-[#F5F4F2] to-[#E8E6E3] shadow-2xl group"
                 whileHover={{ scale: 1.01 }}
                 transition={{ duration: 0.2 }}
             >
@@ -133,45 +160,85 @@ function ProductImageGallery({ images, productName, mainImage }: ProductImageGal
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute inset-0 p-4"
+                        className="absolute inset-0"
                     >
-                        {imageLoadErrors.has(selectedIndex) ? (
+                        {currentMedia?.type === 'video' ? (
+                            <div className="w-full h-full flex items-center justify-center bg-black">
+                                <video
+                                    ref={videoRef}
+                                    src={currentMedia.url}
+                                    className="w-full h-full object-contain"
+                                    loop
+                                    muted={isMuted}
+                                    playsInline
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                />
+                                {/* Video Controls */}
+                                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-10">
+                                    <button
+                                        onClick={togglePlay}
+                                        className="p-3 bg-black/60 hover:bg-black/80 rounded-full text-white transition-colors"
+                                    >
+                                        {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                                    </button>
+                                    <button
+                                        onClick={toggleMute}
+                                        className="p-3 bg-black/60 hover:bg-black/80 rounded-full text-white transition-colors"
+                                    >
+                                        {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : imageLoadErrors.has(selectedIndex) ? (
                             <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-2xl">
                                 <Package className="w-24 h-24 text-gray-300" />
                             </div>
                         ) : (
-                            <Image
-                                src={currentImage}
-                                alt={`${productName} - Image ${selectedIndex + 1}`}
-                                fill
-                                className="object-contain"
-                                priority={selectedIndex === 0}
-                                onError={() => handleImageError(selectedIndex)}
-                            />
+                            <div
+                                className="w-full h-full p-4 cursor-zoom-in"
+                                onClick={() => setIsLightboxOpen(true)}
+                            >
+                                <Image
+                                    src={currentMedia?.url || ''}
+                                    alt={`${productName} - Image ${selectedIndex + 1}`}
+                                    fill
+                                    className="object-contain"
+                                    priority={selectedIndex === 0}
+                                    onError={() => handleImageError(selectedIndex)}
+                                />
+                                {/* Zoom indicator for images */}
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                    <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-70 transition-opacity" />
+                                </div>
+                            </div>
                         )}
                     </motion.div>
                 </AnimatePresence>
 
-                {/* Zoom indicator */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                    <ZoomIn className="w-10 h-10 text-white opacity-0 group-hover:opacity-70 transition-opacity" />
-                </div>
+                {/* Media counter badge */}
+                {mediaItems.length > 1 && (
+                    <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full z-10">
+                        {selectedIndex + 1} / {mediaItems.length}
+                    </div>
+                )}
 
-                {/* Image counter badge */}
-                {normalizedImages.length > 1 && (
-                    <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full">
-                        {selectedIndex + 1} / {normalizedImages.length}
+                {/* Video badge */}
+                {currentMedia?.type === 'video' && (
+                    <div className="absolute top-4 left-4 bg-purple-600/90 text-white text-sm px-3 py-1 rounded-full flex items-center gap-1 z-10">
+                        <Video size={14} />
+                        Video
                     </div>
                 )}
             </motion.div>
 
             {/* Thumbnail Row */}
-            {normalizedImages.length > 1 && (
+            {mediaItems.length > 1 && (
                 <div className="flex gap-3 justify-center">
-                    {visibleThumbnails.map((imageUrl, index) => (
+                    {visibleThumbnails.map((media, index) => (
                         <ThumbnailButton
-                            key={`thumb-${index}-${imageUrl}`}
-                            imageUrl={imageUrl}
+                            key={`thumb-${index}-${media.url}`}
+                            media={media}
                             index={index}
                             isSelected={selectedIndex === index}
                             productName={productName}
@@ -181,18 +248,14 @@ function ProductImageGallery({ images, productName, mainImage }: ProductImageGal
                         />
                     ))}
 
-                    {/* "+X more" button */}
                     {remainingCount > 0 && (
                         <button
                             onClick={handleMoreClick}
                             className="w-16 h-16 rounded-xl overflow-hidden border-2 border-dashed border-[#D4AF37] 
-                       bg-[#D4AF37]/10 flex items-center justify-center hover:bg-[#D4AF37]/20 
-                       transition-all duration-200"
-                            aria-label={`View ${remainingCount} more images`}
+                                     bg-[#D4AF37]/10 flex items-center justify-center hover:bg-[#D4AF37]/20 
+                                     transition-all duration-200"
                         >
-                            <span className="text-[#D4AF37] font-semibold text-sm">
-                                +{remainingCount}
-                            </span>
+                            <span className="text-[#D4AF37] font-semibold text-sm">+{remainingCount}</span>
                         </button>
                     )}
                 </div>
@@ -202,7 +265,7 @@ function ProductImageGallery({ images, productName, mainImage }: ProductImageGal
             <AnimatePresence>
                 {isLightboxOpen && (
                     <LightboxModal
-                        images={normalizedImages}
+                        mediaItems={mediaItems}
                         selectedIndex={selectedIndex}
                         productName={productName}
                         onClose={() => setIsLightboxOpen(false)}
@@ -218,9 +281,10 @@ function ProductImageGallery({ images, productName, mainImage }: ProductImageGal
     );
 }
 
-// Memoized Thumbnail Button Component
+
+// Thumbnail Button Component
 interface ThumbnailButtonProps {
-    imageUrl: string;
+    media: MediaItem;
     index: number;
     isSelected: boolean;
     productName: string;
@@ -230,7 +294,7 @@ interface ThumbnailButtonProps {
 }
 
 const ThumbnailButton = memo(function ThumbnailButton({
-    imageUrl,
+    media,
     index,
     isSelected,
     productName,
@@ -242,21 +306,26 @@ const ThumbnailButton = memo(function ThumbnailButton({
         <button
             onClick={onClick}
             className={cn(
-                "w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200",
+                "w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200 relative",
                 isSelected
                     ? "border-[#D4AF37] shadow-md ring-2 ring-[#D4AF37]/30"
                     : "border-transparent opacity-60 hover:opacity-100 hover:border-gray-300"
             )}
-            aria-label={`View image ${index + 1}`}
-            aria-pressed={isSelected}
         >
-            {hasError ? (
+            {media.type === 'video' ? (
+                <div className="w-full h-full bg-purple-100 flex items-center justify-center relative">
+                    <Video className="w-6 h-6 text-purple-500" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-purple-600 text-white text-[8px] text-center py-0.5">
+                        VIDEO
+                    </div>
+                </div>
+            ) : hasError ? (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                     <Package className="w-6 h-6 text-gray-300" />
                 </div>
             ) : (
                 <Image
-                    src={imageUrl}
+                    src={media.url}
                     alt={`${productName} thumbnail ${index + 1}`}
                     width={64}
                     height={64}
@@ -271,7 +340,7 @@ const ThumbnailButton = memo(function ThumbnailButton({
 
 // Lightbox Modal Component
 interface LightboxModalProps {
-    images: string[];
+    mediaItems: MediaItem[];
     selectedIndex: number;
     productName: string;
     onClose: () => void;
@@ -283,7 +352,7 @@ interface LightboxModalProps {
 }
 
 const LightboxModal = memo(function LightboxModal({
-    images,
+    mediaItems,
     selectedIndex,
     productName,
     onClose,
@@ -293,16 +362,32 @@ const LightboxModal = memo(function LightboxModal({
     imageLoadErrors,
     onImageError,
 }: LightboxModalProps) {
-    // Handle keyboard events
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const currentMedia = mediaItems[selectedIndex];
+
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'ArrowLeft') {
-            onPrevious();
-        } else if (e.key === 'ArrowRight') {
-            onNext();
-        } else if (e.key === 'Escape') {
-            onClose();
-        }
+        if (e.key === 'ArrowLeft') onPrevious();
+        else if (e.key === 'ArrowRight') onNext();
+        else if (e.key === 'Escape') onClose();
     }, [onPrevious, onNext, onClose]);
+
+    const togglePlay = () => {
+        if (!videoRef.current) return;
+        if (isPlaying) {
+            videoRef.current.pause();
+        } else {
+            videoRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+    };
+
+    const toggleMute = () => {
+        if (!videoRef.current) return;
+        videoRef.current.muted = !isMuted;
+        setIsMuted(!isMuted);
+    };
 
     return (
         <motion.div
@@ -313,51 +398,54 @@ const LightboxModal = memo(function LightboxModal({
             onClick={onClose}
             onKeyDown={handleKeyDown}
             tabIndex={0}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Image gallery lightbox"
         >
-            {/* Close button */}
             <button
                 onClick={onClose}
                 className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                aria-label="Close lightbox"
             >
                 <X className="w-6 h-6 text-white" />
             </button>
 
-            {/* Main image area */}
-            <div
-                className="flex-1 flex items-center justify-center p-4 md:p-8"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Previous button */}
-                {images.length > 1 && (
-                    <button
-                        onClick={onPrevious}
-                        className="absolute left-4 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                        aria-label="Previous image"
-                    >
+            <div className="flex-1 flex items-center justify-center p-4 md:p-8" onClick={(e) => e.stopPropagation()}>
+                {mediaItems.length > 1 && (
+                    <button onClick={onPrevious} className="absolute left-4 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
                         <ChevronLeft className="w-6 h-6 text-white" />
                     </button>
                 )}
 
-                {/* Current image */}
                 <motion.div
                     key={selectedIndex}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="relative max-w-4xl max-h-[70vh] w-full h-full"
+                    className="relative max-w-4xl max-h-[70vh] w-full h-full flex items-center justify-center"
                 >
-                    {imageLoadErrors.has(selectedIndex) ? (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-24 h-24 text-gray-500" />
+                    {currentMedia?.type === 'video' ? (
+                        <div className="relative w-full h-full flex items-center justify-center">
+                            <video
+                                ref={videoRef}
+                                src={currentMedia.url}
+                                className="max-w-full max-h-full object-contain"
+                                loop
+                                muted={isMuted}
+                                playsInline
+                                onPlay={() => setIsPlaying(true)}
+                                onPause={() => setIsPlaying(false)}
+                            />
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
+                                <button onClick={togglePlay} className="p-3 bg-white/20 hover:bg-white/30 rounded-full text-white">
+                                    {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                                </button>
+                                <button onClick={toggleMute} className="p-3 bg-white/20 hover:bg-white/30 rounded-full text-white">
+                                    {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+                                </button>
+                            </div>
                         </div>
+                    ) : imageLoadErrors.has(selectedIndex) ? (
+                        <Package className="w-24 h-24 text-gray-500" />
                     ) : (
                         <Image
-                            src={images[selectedIndex]}
+                            src={currentMedia?.url || ''}
                             alt={`${productName} - Image ${selectedIndex + 1}`}
                             fill
                             className="object-contain"
@@ -367,60 +455,39 @@ const LightboxModal = memo(function LightboxModal({
                     )}
                 </motion.div>
 
-                {/* Next button */}
-                {images.length > 1 && (
-                    <button
-                        onClick={onNext}
-                        className="absolute right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                        aria-label="Next image"
-                    >
+                {mediaItems.length > 1 && (
+                    <button onClick={onNext} className="absolute right-4 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
                         <ChevronRight className="w-6 h-6 text-white" />
                     </button>
                 )}
             </div>
 
-            {/* Thumbnail strip at bottom */}
-            <div
-                className="p-4 bg-black/50"
-                onClick={(e) => e.stopPropagation()}
-            >
+            <div className="p-4 bg-black/50" onClick={(e) => e.stopPropagation()}>
                 <div className="flex gap-2 justify-center overflow-x-auto pb-2 max-w-full">
-                    {images.map((imageUrl, index) => (
+                    {mediaItems.map((media, index) => (
                         <button
                             key={`lightbox-thumb-${index}`}
                             onClick={() => onSelectIndex(index)}
                             className={cn(
-                                "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
-                                selectedIndex === index
-                                    ? "border-[#D4AF37] opacity-100"
-                                    : "border-transparent opacity-50 hover:opacity-80"
+                                "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all relative",
+                                selectedIndex === index ? "border-[#D4AF37] opacity-100" : "border-transparent opacity-50 hover:opacity-80"
                             )}
-                            aria-label={`Select image ${index + 1}`}
-                            aria-pressed={selectedIndex === index}
                         >
-                            {imageLoadErrors.has(index) ? (
+                            {media.type === 'video' ? (
+                                <div className="w-full h-full bg-purple-900 flex items-center justify-center">
+                                    <Video className="w-6 h-6 text-purple-300" />
+                                </div>
+                            ) : imageLoadErrors.has(index) ? (
                                 <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                                     <Package className="w-6 h-6 text-gray-500" />
                                 </div>
                             ) : (
-                                <Image
-                                    src={imageUrl}
-                                    alt={`Thumbnail ${index + 1}`}
-                                    width={64}
-                                    height={64}
-                                    className="object-cover w-full h-full"
-                                    loading="lazy"
-                                    onError={() => onImageError(index)}
-                                />
+                                <Image src={media.url} alt={`Thumbnail ${index + 1}`} width={64} height={64} className="object-cover w-full h-full" loading="lazy" onError={() => onImageError(index)} />
                             )}
                         </button>
                     ))}
                 </div>
-
-                {/* Image counter */}
-                <p className="text-center text-white/70 text-sm mt-2">
-                    {selectedIndex + 1} of {images.length}
-                </p>
+                <p className="text-center text-white/70 text-sm mt-2">{selectedIndex + 1} of {mediaItems.length}</p>
             </div>
         </motion.div>
     );

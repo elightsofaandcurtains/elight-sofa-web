@@ -195,7 +195,7 @@ export default function Navbar() {
               {/* User Authentication */}
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
-              ) : user && profile ? (
+              ) : user && profile && profile.name ? (
                 <div className="relative z-[100]">
                   <motion.button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -205,7 +205,7 @@ export default function Navbar() {
                   >
                     <div className="w-8 h-8 rounded-full bg-[#D4AF37] flex items-center justify-center">
                       <span className="text-white text-sm font-medium">
-                        {profile.name.charAt(0).toUpperCase()}
+                        {profile.name?.charAt(0)?.toUpperCase() || 'U'}
                       </span>
                     </div>
                   </motion.button>
@@ -220,11 +220,11 @@ export default function Navbar() {
                       />
                       <div className="fixed right-4 top-[70px] w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-[9999]">
                         <div className="p-4 bg-[#2D2926] rounded-t-xl">
-                          <p className="font-medium text-white text-sm">{profile.name}</p>
-                          <p className="text-xs text-gray-400 mt-1">{profile.email}</p>
+                          <p className="font-medium text-white text-sm">{profile.name || 'User'}</p>
+                          <p className="text-xs text-gray-400 mt-1">{profile.email || ''}</p>
                           <div className="flex items-center gap-1 mt-2">
                             <Shield className="w-3 h-3 text-[#D4AF37]" />
-                            <span className="text-xs text-[#D4AF37] capitalize">{profile.role}</span>
+                            <span className="text-xs text-[#D4AF37] capitalize">{profile.role || 'user'}</span>
                           </div>
                         </div>
                         <div className="py-1">
@@ -389,16 +389,16 @@ export default function Navbar() {
                 {/* Mobile Auth Section */}
                 {loading ? (
                   <div className="w-full h-12 bg-gray-200 animate-pulse rounded-lg"></div>
-                ) : user && profile ? (
+                ) : user && profile && profile.name ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       <div className="w-10 h-10 rounded-full bg-[#D4AF37] flex items-center justify-center">
                         <span className="text-white font-medium">
-                          {profile.name.charAt(0).toUpperCase()}
+                          {profile.name?.charAt(0)?.toUpperCase() || 'U'}
                         </span>
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{profile.name}</p>
+                        <p className="font-medium text-gray-900">{profile.name || 'User'}</p>
                         <p className="text-sm text-gray-500 capitalize">{profile.role}</p>
                       </div>
                     </div>

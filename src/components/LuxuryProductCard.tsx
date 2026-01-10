@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Star, Send, Package } from "lucide-react";
+import { Star, Send, Package, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { ProductItem } from "@/lib/firebase/products";
 import { formatCurrency, cn } from "@/lib/utils";
 
@@ -15,6 +16,50 @@ interface LuxuryProductCardProps {
 
 export default function LuxuryProductCard({ product, index = 0 }: LuxuryProductCardProps) {
   const router = useRouter();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [showVideo, setShowVideo] = useState(false);
+
+  // Get first image and first video from mediaOrder (respecting order)
+  const getFirstMedia = () => {
+    let firstImage: string | null = null;
+    let firstVideo: string | null = null;
+
+    if (product.mediaOrder && product.mediaOrder.length > 0) {
+      // Use mediaOrder - first item is the main display
+      const firstMedia = product.mediaOrder[0];
+      if (firstMedia.type === 'image') {
+        firstImage = firstMedia.url;
+      } else if (firstMedia.type === 'video') {
+        firstVideo = firstMedia.url;
+      }
+
+      // Find first of each type
+      for (const media of product.mediaOrder) {
+        if (media.type === 'image' && !firstImage) {
+          firstImage = media.url;
+        }
+        if (media.type === 'video' && !firstVideo) {
+          firstVideo = media.url;
+        }
+        if (firstImage && firstVideo) break;
+      }
+    }
+
+    // Fallback to separate arrays if mediaOrder not available
+    if (!firstImage) {
+      firstImage = product.imageUrl || (product.imageUrls && product.imageUrls[0]) || null;
+    }
+    if (!firstVideo && product.videoUrls && product.videoUrls.length > 0) {
+      firstVideo = product.videoUrls[0];
+    }
+
+    return { firstImage, firstVideo };
+  };
+
+  const { firstImage, firstVideo } = getFirstMedia();
+  const hasVideo = !!firstVideo;
 
   const getStockBadge = () => {
     switch (product.status) {
@@ -33,6 +78,40 @@ export default function LuxuryProductCard({ product, index = 0 }: LuxuryProductC
     e.preventDefault();
     e.stopPropagation();
     router.push(`/custom-inquiry?product=${encodeURIComponent(product.name)}&category=${encodeURIComponent(product.category)}&id=${product.id}`);
+  };
+
+  const toggleVideo = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!videoRef.current) return;
+
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!videoRef.current) return;
+    videoRef.current.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  const handleShowVideo = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowVideo(true);
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    }, 100);
   };
 
   const stockBadge = getStockBadge();
@@ -76,35 +155,91 @@ export default function LuxuryProductCard({ product, index = 0 }: LuxuryProductC
           transition={{ duration: 0.4 }}
         />
 
-        {/* Image Container */}
+        {/* Image/Video Container */}
         <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-b from-[#F8F8F8] to-[#F0F0F0]">
-          <motion.div
-            className="w-full h-full"
-            whileHover={{ scale: 1.1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          >
-            {product.imageUrl ? (
-              <Image
-                src={product.imageUrl}
-                alt={product.name}
-                fill
-                className="object-cover transition-transform duration-700"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=No+Image';
-                }}
+          {/* Show Video if available and toggled */}
+          {hasVideo && showVideo ? (
+            <div className="w-full h-full relative">
+              <video
+                ref={videoRef}
+                src={firstVideo!}
+                className="w-full h-full object-cover"
+                loop
+                muted={isMuted}
+                playsInline
+                onClick={(e) => e.preventDefault()}
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Package className="w-16 h-16 text-gray-300" />
+              {/* Video Controls */}
+              <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-20">
+                <button
+                  onClick={toggleVideo}
+                  className="p-2 bg-black/60 hover:bg-black/80 rounded-full text-white transition-colors"
+                >
+                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                </button>
+                <button
+                  onClick={toggleMute}
+                  className="p-2 bg-black/60 hover:bg-black/80 rounded-full text-white transition-colors"
+                >
+                  {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                </button>
               </div>
-            )}
-          </motion.div>
+              {/* Back to Image button */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowVideo(false);
+                  setIsPlaying(false);
+                  if (videoRef.current) videoRef.current.pause();
+                }}
+                className="absolute top-2 left-2 px-2 py-1 bg-black/60 hover:bg-black/80 rounded text-white text-xs transition-colors z-20"
+              >
+                Show Image
+              </button>
+            </div>
+          ) : (
+            <motion.div
+              className="w-full h-full"
+              whileHover={{ scale: 1.1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            >
+              {firstImage ? (
+                <Image
+                  src={firstImage}
+                  alt={product.name}
+                  fill
+                  className="object-cover transition-transform duration-700"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=No+Image';
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="w-16 h-16 text-gray-300" />
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* Play Video Button (when video available but not showing) */}
+          {hasVideo && !showVideo && (
+            <button
+              onClick={handleShowVideo}
+              className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/90 hover:bg-purple-700 text-white text-xs font-medium rounded-full backdrop-blur-sm transition-colors z-10"
+            >
+              <Play size={14} fill="white" />
+              Play Video
+            </button>
+          )}
 
           {/* Overlay on hover */}
-          <motion.div
-            className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"
-          />
+          {!showVideo && (
+            <motion.div
+              className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"
+            />
+          )}
 
           {/* Stock Badge with animation */}
           <motion.div
@@ -112,7 +247,7 @@ export default function LuxuryProductCard({ product, index = 0 }: LuxuryProductC
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
             className={cn(
-              "absolute top-4 right-4 px-3 py-1.5 text-xs font-medium tracking-wide rounded-full backdrop-blur-md shadow-sm",
+              "absolute top-4 right-4 px-3 py-1.5 text-xs font-medium tracking-wide rounded-full backdrop-blur-md shadow-sm z-10",
               stockBadge.color
             )}
           >
@@ -130,12 +265,14 @@ export default function LuxuryProductCard({ product, index = 0 }: LuxuryProductC
             </motion.div>
           )}
 
-          {/* Quick view indicator */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <span className="px-4 py-2 bg-white/90 text-[#2D2926] text-sm font-medium rounded-full shadow-lg backdrop-blur-sm">
-              View Details
-            </span>
-          </div>
+          {/* Quick view indicator - hide when video is playing */}
+          {!showVideo && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span className="px-4 py-2 bg-white/90 text-[#2D2926] text-sm font-medium rounded-full shadow-lg backdrop-blur-sm">
+                View Details
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -180,12 +317,19 @@ export default function LuxuryProductCard({ product, index = 0 }: LuxuryProductC
           </div>
 
           {/* Price with highlight */}
-          <div className="flex items-baseline gap-2 pt-1">
-            <span className="text-xs text-[#8B8680]">Starting from</span>
-            <span className="text-xl font-bold text-[#2D2926] group-hover:text-[#D4AF37] transition-colors">
-              {formatCurrency(product.price)}
-            </span>
+          <div className="flex flex-col gap-1 pt-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs text-[#8B8680]">Starting from</span>
+              <span className="text-xl font-bold text-[#2D2926] group-hover:text-[#D4AF37] transition-colors">
+                {formatCurrency(product.price)}
+              </span>
+            </div>
           </div>
+
+          {/* Sofa Note */}
+          {product.category === 'Sofas' && (
+            <p className="text-[10px] text-gray-400 italic">* Price calculated per foot</p>
+          )}
 
           {/* Minimal Highlights */}
           <div className="flex flex-wrap gap-2 pt-2">

@@ -1,5 +1,5 @@
-// GitHub Image Upload Service
-// Uploads images directly to a GitHub repository and returns the raw URL
+// GitHub Media Upload Service
+// Uploads images and videos directly to a GitHub repository and returns the raw URL
 
 interface GitHubUploadConfig {
     owner: string;
@@ -14,6 +14,7 @@ interface UploadResult {
     url?: string;
     rawUrl?: string;
     error?: string;
+    type?: 'image' | 'video';
 }
 
 interface MultiUploadResult {
@@ -21,6 +22,12 @@ interface MultiUploadResult {
     urls: string[];
     errors: string[];
 }
+
+// Allowed file types
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 // Get config from environment variables
 export function getGitHubConfig(): GitHubUploadConfig {
@@ -61,58 +68,67 @@ async function fileToBase64(file: File): Promise<string> {
     });
 }
 
-// Upload single image to GitHub
+// Check if file is an image
+export function isImageFile(file: File): boolean {
+    return ALLOWED_IMAGE_TYPES.includes(file.type) || file.type.startsWith('image/');
+}
+
+// Check if file is a video
+export function isVideoFile(file: File): boolean {
+    return ALLOWED_VIDEO_TYPES.includes(file.type) || file.type.startsWith('video/');
+}
+
+// Upload single file (image or video) to GitHub via API route (bypasses CORS)
 export async function uploadImageToGitHub(file: File): Promise<UploadResult> {
-    const config = getGitHubConfig();
+    const isImage = isImageFile(file);
+    const isVideo = isVideoFile(file);
 
-    if (!config.owner || !config.repo || !config.token) {
-        return { success: false, error: 'GitHub upload not configured.' };
+    if (!isImage && !isVideo) {
+        return { success: false, error: 'Only image and video files are allowed.' };
     }
 
-    if (!file.type.startsWith('image/')) {
-        return { success: false, error: 'Only image files are allowed.' };
+    // Check file size based on type
+    if (isImage && file.size > MAX_IMAGE_SIZE) {
+        return { success: false, error: 'Image size must be less than 10MB.' };
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-        return { success: false, error: 'File size must be less than 10MB.' };
+    if (isVideo && file.size > MAX_VIDEO_SIZE) {
+        return { success: false, error: 'Video size must be less than 100MB.' };
     }
 
     try {
-        const fileName = generateFileName(file.name);
-        const filePath = `${config.path}/${fileName}`;
-        const base64Content = await fileToBase64(file);
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', isVideo ? 'video' : 'image');
 
-        const apiUrl = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filePath}`;
+        console.log('Uploading via API route:', file.name, isVideo ? 'video' : 'image');
 
-        const response = await fetch(apiUrl, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${config.token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json',
-            },
-            body: JSON.stringify({
-                message: `Upload product image: ${fileName}`,
-                content: base64Content,
-                branch: config.branch,
-            }),
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to upload to GitHub');
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            console.error('Upload API error:', result.error);
+            return { success: false, error: result.error || 'Upload failed' };
         }
 
-        const rawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${filePath}`;
+        console.log('Upload successful:', result.url);
 
-        return { success: true, rawUrl };
+        return {
+            success: true,
+            rawUrl: result.url,
+            type: result.type
+        };
     } catch (error) {
-        console.error('GitHub upload error:', error);
+        console.error('Upload error:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
     }
 }
 
-// Upload multiple images to GitHub
+// Upload multiple files (images/videos) to GitHub
 export async function uploadMultipleImagesToGitHub(files: File[]): Promise<MultiUploadResult> {
     const urls: string[] = [];
     const errors: string[] = [];
@@ -134,4 +150,39 @@ export async function uploadMultipleImagesToGitHub(files: File[]): Promise<Multi
         urls,
         errors,
     };
+}
+
+// Delete media from GitHub via API route
+export async function deleteMediaFromGitHub(urls: string[]): Promise<{ success: boolean; message?: string; error?: string }> {
+    if (!urls || urls.length === 0) {
+        return { success: true, message: 'No URLs to delete' };
+    }
+
+    // Filter only GitHub URLs
+    const githubUrls = urls.filter(url =>
+        url && typeof url === 'string' && url.includes('raw.githubusercontent.com')
+    );
+
+    if (githubUrls.length === 0) {
+        return { success: true, message: 'No GitHub URLs to delete' };
+    }
+
+    try {
+        const response = await fetch('/api/upload/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: githubUrls }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            return { success: false, error: result.error || 'Delete failed' };
+        }
+
+        return { success: true, message: result.message };
+    } catch (error) {
+        console.error('Delete error:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Delete failed' };
+    }
 }
