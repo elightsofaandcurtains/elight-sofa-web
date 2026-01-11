@@ -34,17 +34,45 @@ export class InquiriesService {
   // Create new inquiry
   static async createInquiry(inquiryData: Omit<Inquiry, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'isViewed'>) {
     try {
-      const docRef = await addDoc(collection(db, this.COLLECTION), {
-        ...inquiryData,
+      console.log("🔥 InquiriesService.createInquiry called with:", inquiryData);
+
+      // Clean the data - remove undefined values (Firebase doesn't accept undefined)
+      const cleanData: Record<string, any> = {
+        firstName: inquiryData.firstName || '',
+        lastName: inquiryData.lastName || '',
+        email: inquiryData.email || '',
+        phone: inquiryData.phone || '',
+        interestArea: inquiryData.interestArea || 'General',
+        budgetRange: inquiryData.budgetRange || '',
+        message: inquiryData.message || '',
+        preferredContact: inquiryData.preferredContact || 'phone',
         status: 'new',
         isViewed: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
+
+      // Only add optional fields if they have values
+      if (inquiryData.productId) cleanData.productId = inquiryData.productId;
+      if (inquiryData.productName) cleanData.productName = inquiryData.productName;
+      if (inquiryData.productCategory) cleanData.productCategory = inquiryData.productCategory;
+      if (inquiryData.productImage) cleanData.productImage = inquiryData.productImage;
+
+      console.log("📄 Clean document data to save:", cleanData);
+      console.log("📄 Firestore collection:", this.COLLECTION);
+
+      const collectionRef = collection(db, this.COLLECTION);
+      console.log("📄 Collection reference created");
+
+      const docRef = await addDoc(collectionRef, cleanData);
+
+      console.log("✅ Inquiry saved to Firebase with ID:", docRef.id);
       return docRef.id;
-    } catch (error) {
-      console.error('Error creating inquiry:', error);
-      throw new Error('Failed to create inquiry');
+    } catch (error: any) {
+      console.error('❌ Error creating inquiry:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      throw new Error(error.message || 'Failed to create inquiry');
     }
   }
 
@@ -212,7 +240,7 @@ export class InquiriesService {
         where('isViewed', '==', false)
       );
 
-      return onSnapshot(q, 
+      return onSnapshot(q,
         (snapshot) => {
           callback(snapshot.size);
         },
@@ -226,7 +254,7 @@ export class InquiriesService {
       console.error('Error setting up inquiry subscription:', error);
       // Return a no-op unsubscribe function
       callback(0);
-      return () => {};
+      return () => { };
     }
   }
 
@@ -276,7 +304,7 @@ export class InquiriesService {
   static async getInquiryStats() {
     try {
       const querySnapshot = await getDocs(collection(db, this.COLLECTION));
-      
+
       let total = 0;
       let newCount = 0;
       let inProgress = 0;

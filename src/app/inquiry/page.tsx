@@ -15,6 +15,7 @@ import {
   User,
 } from "lucide-react";
 import { COMPANY_CONFIG } from "@/lib/companyConfig";
+import { InquiriesService } from "@/lib/firebase/inquiries";
 
 const inquirySchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -29,9 +30,20 @@ const inquirySchema = z.object({
 
 type InquiryFormData = z.infer<typeof inquirySchema>;
 
+// Map form interest areas to Firebase categories
+const interestAreaMap: Record<string, string> = {
+  'living-room': 'Sofas',
+  'bedroom': 'Bedroom',
+  'dining': 'Tables',
+  'office': 'Chairs',
+  'outdoor': 'General',
+  'custom': 'General',
+};
+
 export default function InquiryPage() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const {
     register,
@@ -52,11 +64,42 @@ export default function InquiryPage() {
 
   const onSubmit = async (data: InquiryFormData) => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("Form submitted:", data);
-    setIsSubmitting(false);
-    setSubmitted(true);
+    setError("");
+
+    try {
+      console.log("📝 Submitting inquiry to Firebase:", data);
+
+      // Convert budget to range string
+      const budgetRange = data.budget >= 1000000 ? '₹10,00,000+' :
+        data.budget >= 500000 ? '₹5,00,000 - ₹10,00,000' :
+          data.budget >= 200000 ? '₹2,00,000 - ₹5,00,000' :
+            data.budget >= 100000 ? '₹1,00,000 - ₹2,00,000' :
+              data.budget >= 50000 ? '₹50,000 - ₹1,00,000' :
+                '₹20,000 - ₹50,000';
+
+      const inquiryData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        interestArea: interestAreaMap[data.interestArea] || 'General',
+        budgetRange: budgetRange,
+        message: `Timeline: ${data.timeline}\n\n${data.message}`,
+        preferredContact: 'phone' as const,
+      };
+
+      console.log("📤 Inquiry data:", inquiryData);
+
+      const inquiryId = await InquiriesService.createInquiry(inquiryData);
+
+      console.log("✅ Inquiry saved with ID:", inquiryId);
+      setSubmitted(true);
+    } catch (err: any) {
+      console.error("❌ Error submitting inquiry:", err);
+      setError(err.message || "Failed to submit inquiry. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -204,6 +247,11 @@ export default function InquiryPage() {
             animate={{ opacity: 1, x: 0 }}
             className="bg-white rounded-lg p-4 md:p-6 lg:p-8 shadow-md"
           >
+            {error && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

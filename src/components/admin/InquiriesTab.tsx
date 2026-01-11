@@ -25,46 +25,9 @@ import { Inquiry, InquiryStatus, InquiryNote } from "@/types";
 import { InquiriesService } from "@/lib/firebase/inquiries";
 import { cn } from "@/lib/utils";
 
-// Mock data for development
-const mockInquiries: Inquiry[] = [
-  {
-    id: "INQ001",
-    firstName: "Rahul",
-    lastName: "Sharma",
-    email: "rahul.sharma@email.com",
-    phone: "9876543210",
-    interestArea: "Sofas",
-    budgetRange: "₹50,000 - ₹1,00,000",
-    message: "Looking for a 3-seater L-shape sofa in grey fabric.",
-    preferredContact: "whatsapp",
-    productId: "sofa-1",
-    productName: "Royal L-Shape Sofa",
-    productCategory: "Sofas",
-    status: "new",
-    isViewed: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "INQ002",
-    firstName: "Priya",
-    lastName: "Patel",
-    email: "priya.patel@email.com",
-    phone: "9123456789",
-    interestArea: "Curtains",
-    budgetRange: "₹10,000 - ₹25,000",
-    message: "Need blackout curtains for bedroom.",
-    preferredContact: "phone",
-    status: "in_progress",
-    isViewed: true,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
 export default function InquiriesTab() {
-  const [inquiries, setInquiries] = useState<Inquiry[]>(mockInquiries);
-  const [loading, setLoading] = useState(false);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -83,12 +46,13 @@ export default function InquiriesTab() {
       const filters: any = {};
       if (statusFilter !== "all") filters.status = statusFilter;
       if (categoryFilter !== "all") filters.category = categoryFilter;
-      
+
       const data = await InquiriesService.getInquiries(filters);
-      setInquiries(data.length > 0 ? data : mockInquiries);
+      console.log("📋 Loaded inquiries from Firebase:", data.length);
+      setInquiries(data);
     } catch (error) {
       console.error("Error loading inquiries:", error);
-      setInquiries(mockInquiries);
+      setInquiries([]);
     } finally {
       setLoading(false);
     }
@@ -97,11 +61,11 @@ export default function InquiriesTab() {
   const handleViewInquiry = async (inquiry: Inquiry) => {
     setSelectedInquiry(inquiry);
     setShowDetailDrawer(true);
-    
+
     if (!inquiry.isViewed) {
       try {
         await InquiriesService.markAsViewed(inquiry.id);
-        setInquiries(prev => prev.map(inq => 
+        setInquiries(prev => prev.map(inq =>
           inq.id === inquiry.id ? { ...inq, isViewed: true } : inq
         ));
       } catch (error) {
@@ -113,7 +77,7 @@ export default function InquiriesTab() {
   const handleStatusChange = async (inquiryId: string, newStatus: InquiryStatus) => {
     try {
       await InquiriesService.updateInquiryStatus(inquiryId, newStatus);
-      setInquiries(prev => prev.map(inq => 
+      setInquiries(prev => prev.map(inq =>
         inq.id === inquiryId ? { ...inq, status: newStatus } : inq
       ));
       if (selectedInquiry?.id === inquiryId) {
@@ -137,7 +101,7 @@ export default function InquiriesTab() {
   };
 
   const filteredInquiries = inquiries.filter(inquiry => {
-    const matchesSearch = searchTerm === "" || 
+    const matchesSearch = searchTerm === "" ||
       `${inquiry.firstName} ${inquiry.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inquiry.phone.includes(searchTerm) ||
       inquiry.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -254,9 +218,15 @@ export default function InquiriesTab() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-500">Loading...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-500">Loading inquiries...</td></tr>
               ) : filteredInquiries.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-500">No inquiries found</td></tr>
+                <tr><td colSpan={7} className="px-4 py-12 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <MessageCircle size={48} className="text-gray-300" />
+                    <p className="text-gray-500 font-medium">No inquiries yet</p>
+                    <p className="text-gray-400 text-sm">Customer inquiries will appear here when submitted</p>
+                  </div>
+                </td></tr>
               ) : (
                 filteredInquiries.map((inquiry) => (
                   <motion.tr
@@ -425,7 +395,7 @@ export default function InquiriesTab() {
                           selectedInquiry.status === status
                             ? status === "new" ? "bg-[#D4AF37] text-white"
                               : status === "in_progress" ? "bg-blue-500 text-white"
-                              : "bg-emerald-500 text-white"
+                                : "bg-emerald-500 text-white"
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         )}
                       >

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { COMPANY_CONFIG } from "@/lib/companyConfig";
 import { InquiriesService } from "@/lib/firebase/inquiries";
+import { db } from "../../../firebase.config";
 import { mockProducts } from "@/data/mock";
 import { Product, InquiryCategory, BudgetRange, PreferredContact } from "@/types";
 
@@ -114,24 +115,38 @@ function CustomInquiryContent() {
   const onSubmit = async (data: InquiryFormData) => {
     setIsSubmitting(true);
     try {
-      await InquiriesService.createInquiry({
+      console.log("📝 Submitting inquiry:", data);
+      console.log("📝 Firebase db object:", db);
+
+      const inquiryData = {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
         phone: data.phone,
         interestArea: data.interestArea as InquiryCategory,
         budgetRange: data.budgetRange as BudgetRange,
-        message: data.message,
+        message: data.message || '',
         preferredContact: data.preferredContact as PreferredContact,
         productId: productId || undefined,
         productName: productName || undefined,
         productCategory: productCategory || undefined,
         productImage: product?.image,
-      });
+      };
+
+      console.log("📤 Inquiry data to save:", inquiryData);
+
+      const inquiryId = await InquiriesService.createInquiry(inquiryData);
+
+      console.log("✅ Inquiry created with ID:", inquiryId);
       setSubmitted(true);
-    } catch (error) {
-      console.error("Error submitting inquiry:", error);
-      alert("Failed to submit inquiry. Please try again.");
+    } catch (error: any) {
+      console.error("❌ Error submitting inquiry:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      alert(`Failed to submit inquiry: ${error.message || 'Please try again.'}`);
     } finally {
       setIsSubmitting(false);
     }
