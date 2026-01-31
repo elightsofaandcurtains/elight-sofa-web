@@ -59,11 +59,14 @@ export async function POST(request: NextRequest) {
             const sizeMB = parseInt(contentLength) / 1024 / 1024;
             console.log(`📦 Request size: ${sizeMB.toFixed(2)} MB`);
 
-            // Vercel has a 4.5MB body size limit for serverless functions
-            // But we can handle larger files with streaming
-            if (sizeMB > 100) {
+            // Vercel free tier has a 4.5MB body size limit for serverless functions
+            // This is a hard limit that cannot be bypassed
+            if (sizeMB > 4.5) {
                 return NextResponse.json(
-                    { success: false, error: `File too large (${sizeMB.toFixed(1)}MB). Maximum is 100MB.` },
+                    {
+                        success: false,
+                        error: `⚠️ File too large (${sizeMB.toFixed(1)}MB)\n\nVercel free tier limit: 4.5MB\n\n✅ Solution: Compress your video to under 4MB\n\nUse: https://www.freeconvert.com/video-compressor\nTarget: 720p, 2Mbps bitrate`
+                    },
                     { status: 413 }
                 );
             }

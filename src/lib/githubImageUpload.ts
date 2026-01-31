@@ -92,16 +92,16 @@ export async function uploadImageToGitHub(file: File): Promise<UploadResult> {
     const fileSizeMB = file.size / 1024 / 1024;
 
     // Check file size before uploading
-    if (fileSizeMB > 100) {
+    if (fileSizeMB > 4.5) {
         return {
             success: false,
-            error: `File too large (${fileSizeMB.toFixed(1)}MB). Maximum size is 100MB. Please compress the ${isVideo ? 'video' : 'image'} and try again.`
+            error: `⚠️ File too large (${fileSizeMB.toFixed(1)}MB)\n\nVercel free tier limit: 4.5MB per upload\n\n✅ Please compress your ${isVideo ? 'video' : 'image'} to under 4MB:\n\n1. Go to: https://www.freeconvert.com/video-compressor\n2. Upload your video\n3. Set quality to 720p\n4. Set bitrate to 2 Mbps\n5. Download compressed video\n6. Upload here\n\nTarget size: < 4MB for best results`
         };
     }
 
-    // Warn for large files
-    if (fileSizeMB > 50) {
-        console.warn(`⚠️ Large file (${fileSizeMB.toFixed(1)}MB) - upload may take a while`);
+    // Warn for files approaching the limit
+    if (fileSizeMB > 3) {
+        console.warn(`⚠️ Large file (${fileSizeMB.toFixed(1)}MB) - approaching 4.5MB Vercel limit`);
     }
 
     // Log file info
