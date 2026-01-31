@@ -52,6 +52,23 @@ function generateFileName(originalName: string, attempt: number = 0): string {
 export async function POST(request: NextRequest) {
     try {
         console.log('🔥 Upload API called');
+
+        // Check content length before processing
+        const contentLength = request.headers.get('content-length');
+        if (contentLength) {
+            const sizeMB = parseInt(contentLength) / 1024 / 1024;
+            console.log(`📦 Request size: ${sizeMB.toFixed(2)} MB`);
+
+            // Vercel has a 4.5MB body size limit for serverless functions
+            // But we can handle larger files with streaming
+            if (sizeMB > 100) {
+                return NextResponse.json(
+                    { success: false, error: `File too large (${sizeMB.toFixed(1)}MB). Maximum is 100MB.` },
+                    { status: 413 }
+                );
+            }
+        }
+
         console.log('📋 GitHub config:', {
             owner: GITHUB_OWNER,
             repo: GITHUB_REPO,

@@ -124,6 +124,17 @@ export async function uploadImageToGitHub(file: File): Promise<UploadResult> {
             body: formData,
         });
 
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('❌ Non-JSON response:', text.substring(0, 200));
+            return {
+                success: false,
+                error: `Server error: Expected JSON but got ${contentType}. This usually means the API route crashed. Check Vercel logs.`
+            };
+        }
+
         const result = await response.json();
 
         if (!response.ok || !result.success) {
