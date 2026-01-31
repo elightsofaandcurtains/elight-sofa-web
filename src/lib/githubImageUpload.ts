@@ -80,7 +80,7 @@ export function isVideoFile(file: File): boolean {
     return ALLOWED_VIDEO_TYPES.includes(file.type) || file.type.startsWith('video/');
 }
 
-// Upload single file (image or video) to GitHub via API route (bypasses CORS)
+// Upload single file (image or video) directly to GitHub API (bypasses Vercel 4.5MB limit)
 export async function uploadImageToGitHub(file: File): Promise<UploadResult> {
     const isImage = isImageFile(file);
     const isVideo = isVideoFile(file);
@@ -91,70 +91,136 @@ export async function uploadImageToGitHub(file: File): Promise<UploadResult> {
 
     const fileSizeMB = file.size / 1024 / 1024;
 
-    // Check file size before uploading
-    if (fileSizeMB > 4.5) {
+    // GitHub API has a 100MB limit per file
+    if (fileSizeMB > 100) {
         return {
             success: false,
-            error: `⚠️ File too large (${fileSizeMB.toFixed(1)}MB)\n\nVercel free tier limit: 4.5MB per upload\n\n✅ Please compress your ${isVideo ? 'video' : 'image'} to under 4MB:\n\n1. Go to: https://www.freeconvert.com/video-compressor\n2. Upload your video\n3. Set quality to 720p\n4. Set bitrate to 2 Mbps\n5. Download compressed video\n6. Upload here\n\nTarget size: < 4MB for best results`
+            error: `⚠️ File too large (${fileSizeMB.toFixed(1)}MB)\n\nGitHub API limit: 100MB per file\n\nPlease compress your ${isVideo ? 'video' : 'image'} to under 100MB.`
         };
     }
 
-    // Warn for files approaching the limit
-    if (fileSizeMB > 3) {
-        console.warn(`⚠️ Large file (${fileSizeMB.toFixed(1)}MB) - approaching 4.5MB Vercel limit`);
+    // Warn for very large files (50-100MB) - these might be slow
+    if (fileSizeMB > 50) {
+        console.warn(`⚠️ Large file (${fileSizeMB.toFixed(1)}MB) - upload may take a while`);
     }
 
     // Log file info
-    console.log('📤 Uploading file:', {
+    console.log('📤 Uploading file directly to GitHub:', {
         name: file.name,
         type: file.type,
         size: `${fileSizeMB.toFixed(2)} MB`,
         isVideo
     });
 
+    // Get GitHub config
+    const config = getGitHubConfig();
+
+    if (!config.owner || !config.repo || !config.token) {
+        return {
+            success: false,
+            error: 'GitHub not configured. Please check environment variables.'
+        };
+    }
+
     try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('type', isVideo ? 'video' : 'image');
+        // Convert file to base64
+        console.log('🔄 Converting file to base64...');
+        const base64Content = await fileToBase64(file);
 
-        console.log('🔄 Uploading via API route...');
+        // Determine folder based on file type
+        const folder = isVideo ? 'videos/products' : config.path;
 
-        const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-        });
+        // Retry logic for file conflicts (422 errors)
+        let attempt = 0;
+        const maxAttempts = 10;
+        let response;
+        let fileName;
+        let filePath;
 
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            console.error('❌ Non-JSON response:', text.substring(0, 200));
-            return {
-                success: false,
-                error: `Server error: Expected JSON but got ${contentType}. This usually means the API route crashed. Check Vercel logs.`
-            };
-        }
+        while (attempt < maxAttempts) {
+            // Generate unique filename with attempt number if retrying
+            fileName = generateFileName(file.name, attempt);
+            filePath = `${folder}/${fileName}`;
+            const apiUrl = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filePath}`;
 
-        const result = await response.json();
+            console.log(`📁 Upload attempt ${attempt + 1}/${maxAttempts}:`, filePath);
 
-        if (!response.ok || !result.success) {
-            console.error('❌ Upload API error:', {
-                status: response.status,
-                error: result.error
+            // Upload directly to GitHub API
+            response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${config.token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json',
+                },
+                body: JSON.stringify({
+                    message: `Upload product ${isVideo ? 'video' : 'image'}: ${fileName}`,
+                    content: base64Content,
+                    branch: config.branch,
+                }),
             });
-            return { success: false, error: result.error || 'Upload failed' };
+
+            console.log('📡 GitHub API response:', response.status, response.statusText);
+
+            // If successful or error is not 422 (file exists), break
+            if (response.ok || response.status !== 422) {
+                break;
+            }
+
+            // 422 error - file exists, retry with new name
+            console.log('⚠️ File exists, retrying with new name...');
+            attempt++;
+
+            // Delay before retry
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        console.log('✅ Upload successful:', result.url);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('❌ GitHub API error:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorData
+            });
+
+            let errorMsg = errorData.message || `GitHub error: ${response.status}`;
+
+            // Detailed error messages
+            if (response.status === 401) {
+                errorMsg = '🔐 GitHub token is invalid or expired. Please check NEXT_PUBLIC_GITHUB_TOKEN in environment variables.';
+            }
+            if (response.status === 403) {
+                errorMsg = '🔐 GitHub token lacks permissions. Ensure "repo" scope is enabled.';
+            }
+            if (response.status === 404) {
+                errorMsg = `Repository ${config.owner}/${config.repo} not found. Check repository name.`;
+            }
+            if (response.status === 422) {
+                errorMsg = `File conflict after ${maxAttempts} attempts. Please try again.`;
+            }
+            if (response.status === 500 || response.status === 502 || response.status === 504) {
+                errorMsg = `GitHub server error or timeout. File might be too large (${fileSizeMB.toFixed(1)}MB).`;
+            }
+
+            return { success: false, error: errorMsg };
+        }
+
+        // Construct raw URL
+        const rawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${config.branch}/${filePath}`;
+
+        console.log('✅ Upload successful:', rawUrl);
 
         return {
             success: true,
-            rawUrl: result.url,
-            type: result.type
+            rawUrl: rawUrl,
+            type: isVideo ? 'video' : 'image'
         };
     } catch (error) {
         console.error('❌ Upload error:', error);
-        return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Upload failed'
+        };
     }
 }
 
