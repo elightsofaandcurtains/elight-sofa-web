@@ -48,10 +48,12 @@ export function isGitHubConfigured(): boolean {
 // Generate unique filename with optional attempt number for retries
 function generateFileName(originalName: string, attempt: number = 0): string {
     const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
+    const random1 = Math.random().toString(36).substring(2, 10);
+    const random2 = Math.random().toString(36).substring(2, 10);
+    const microtime = performance.now().toString().replace('.', '');
     const extension = originalName.split('.').pop()?.toLowerCase() || 'jpg';
-    const suffix = attempt > 0 ? `-${attempt}` : '';
-    return `${timestamp}-${random}${suffix}.${extension}`;
+    const suffix = attempt > 0 ? `-retry${attempt}` : '';
+    return `${timestamp}-${random1}-${random2}-${microtime}${suffix}.${extension}`;
 }
 
 // Convert file to base64

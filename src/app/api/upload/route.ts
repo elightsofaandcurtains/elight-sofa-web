@@ -41,10 +41,12 @@ async function validateToken(): Promise<{ valid: boolean; error?: string }> {
 
 function generateFileName(originalName: string, attempt: number = 0): string {
     const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
+    const random1 = Math.random().toString(36).substring(2, 10);
+    const random2 = Math.random().toString(36).substring(2, 10);
+    const microtime = performance.now().toString().replace('.', '');
     const extension = originalName.split('.').pop()?.toLowerCase() || 'jpg';
-    const suffix = attempt > 0 ? `-${attempt}` : '';
-    return `${timestamp}-${random}${suffix}.${extension}`;
+    const suffix = attempt > 0 ? `-retry${attempt}` : '';
+    return `${timestamp}-${random1}-${random2}-${microtime}${suffix}.${extension}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -124,7 +126,7 @@ export async function POST(request: NextRequest) {
 
         // Retry logic for file conflicts (422 errors)
         let attempt = 0;
-        let maxAttempts = 5;
+        let maxAttempts = 10; // Increased from 5 to 10
         let response;
         let fileName;
         let filePath;
@@ -164,8 +166,8 @@ export async function POST(request: NextRequest) {
             console.log('⚠️ File exists, retrying with new name...');
             attempt++;
 
-            // Small delay before retry
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Longer delay before retry (increased from 100ms to 500ms)
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         if (!response.ok) {

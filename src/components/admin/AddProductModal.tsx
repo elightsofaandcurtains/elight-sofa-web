@@ -8,7 +8,6 @@ import { z } from "zod";
 import { X, Link as LinkIcon, AlertCircle, Loader2, Upload, Image as ImageIcon, Check, Video, GripVertical } from "lucide-react";
 import { ProductCategory } from "@/lib/firebase/products";
 import { uploadImageToGitHub, uploadMultipleImagesToGitHub, isGitHubConfigured, deleteMediaFromGitHub } from "@/lib/githubImageUpload";
-import { compressVideo, needsCompression, estimateCompressionTime } from "@/lib/videoCompression";
 import {
   SOFA_TYPES,
   SEATING_CAPACITY,
@@ -189,46 +188,23 @@ export default function AddProductModal({ onClose, onSave }: AddProductModalProp
     setIsUploading(true);
 
     try {
-      const filesToUpload: File[] = [];
-      let totalFiles = files.length;
-      let processedFiles = 0;
-
-      // Process each video file
+      // Check file sizes first - NO COMPRESSION, just reject if too large
       for (const file of Array.from(files)) {
-        processedFiles++;
         const fileSizeMB = file.size / 1024 / 1024;
-
-        // Check if compression is needed
-        if (needsCompression(file, 90)) {
-          const estimatedTime = estimateCompressionTime(file);
-          setUploadProgress(`Compressing video ${processedFiles}/${totalFiles} (${fileSizeMB.toFixed(1)}MB → ~50MB, est. ${estimatedTime})...`);
-
-          console.log(`🎬 Video needs compression: ${file.name} (${fileSizeMB.toFixed(1)}MB)`);
-
-          // Compress the video
-          const compressionResult = await compressVideo(file, {
-            maxSizeMB: 90,
-            maxWidthOrHeight: 1920,
-            quality: 0.8
-          });
-
-          if (compressionResult.success && compressionResult.file) {
-            const compressedSizeMB = compressionResult.compressedSize / 1024 / 1024;
-            console.log(`✅ Compressed: ${fileSizeMB.toFixed(1)}MB → ${compressedSizeMB.toFixed(1)}MB (${compressionResult.compressionRatio.toFixed(2)}x)`);
-            filesToUpload.push(compressionResult.file);
-          } else {
-            console.warn(`⚠️ Compression failed for ${file.name}, uploading original`);
-            filesToUpload.push(file);
+        if (fileSizeMB > 100) {
+          setUploadError(`Video "${file.name}" is too large (${fileSizeMB.toFixed(1)}MB). Maximum size is 100MB. Please compress it using an external tool (like HandBrake or online compressor) before uploading.`);
+          setIsUploading(false);
+          if (videoInputRef.current) {
+            videoInputRef.current.value = "";
           }
-        } else {
-          console.log(`✅ Video already under 90MB: ${file.name} (${fileSizeMB.toFixed(1)}MB)`);
-          filesToUpload.push(file);
+          return;
         }
       }
 
-      // Upload all videos (compressed or original)
-      setUploadProgress(`Uploading ${filesToUpload.length} video(s)...`);
-      const result = await uploadMultipleImagesToGitHub(filesToUpload);
+      // All files are under 100MB, upload directly without compression
+      console.log(`✅ Uploading ${files.length} video(s) directly (no compression)`);
+      setUploadProgress(`Uploading ${files.length} video(s)...`);
+      const result = await uploadMultipleImagesToGitHub(Array.from(files));
 
       if (result.success && result.urls.length > 0) {
         const newMediaItems: MediaItem[] = result.urls.map(url => ({ url, type: 'video' as const }));

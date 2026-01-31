@@ -663,10 +663,26 @@ export class EmployeesService {
   // Add salary audit log
   static async addSalaryAuditLog(log: Omit<SalaryRateAuditLog, 'id'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, this.AUDIT_LOGS_COLLECTION), {
-        ...log,
+      // Remove undefined fields to prevent Firebase errors
+      const cleanLog: any = {
+        employeeId: log.employeeId,
+        employeeName: log.employeeName,
+        changedBy: log.changedBy,
+        changeType: log.changeType,
+        effectiveFrom: log.effectiveFrom,
         createdAt: serverTimestamp()
-      });
+      };
+
+      // Only add fields if they have values (not undefined)
+      if (log.previousSalary !== undefined) cleanLog.previousSalary = log.previousSalary;
+      if (log.newSalary !== undefined) cleanLog.newSalary = log.newSalary;
+      if (log.previousSalaryType !== undefined) cleanLog.previousSalaryType = log.previousSalaryType;
+      if (log.newSalaryType !== undefined) cleanLog.newSalaryType = log.newSalaryType;
+      if (log.previousPerDayRate !== undefined) cleanLog.previousPerDayRate = log.previousPerDayRate;
+      if (log.newPerDayRate !== undefined) cleanLog.newPerDayRate = log.newPerDayRate;
+      if (log.reason !== undefined) cleanLog.reason = log.reason;
+
+      const docRef = await addDoc(collection(db, this.AUDIT_LOGS_COLLECTION), cleanLog);
       return docRef.id;
     } catch (error) {
       console.error('Error adding audit log:', error);

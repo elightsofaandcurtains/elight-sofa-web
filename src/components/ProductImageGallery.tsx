@@ -146,10 +146,10 @@ function ProductImageGallery({ images, productName, mainImage, videoUrls = [], m
     }
 
     return (
-        <div className="space-y-4" onKeyDown={handleKeyDown} tabIndex={0}>
+        <div className="space-y-4 w-full overflow-hidden" onKeyDown={handleKeyDown} tabIndex={0}>
             {/* Main Media Viewer */}
             <motion.div
-                className="relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-[#F5F4F2] to-[#E8E6E3] shadow-2xl group"
+                className="relative aspect-square rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-br from-[#F5F4F2] to-[#E8E6E3] shadow-2xl group w-full"
                 whileHover={{ scale: 1.01 }}
                 transition={{ duration: 0.2 }}
             >
@@ -234,30 +234,32 @@ function ProductImageGallery({ images, productName, mainImage, videoUrls = [], m
 
             {/* Thumbnail Row */}
             {mediaItems.length > 1 && (
-                <div className="flex gap-3 justify-center">
-                    {visibleThumbnails.map((media, index) => (
-                        <ThumbnailButton
-                            key={`thumb-${index}-${media.url}`}
-                            media={media}
-                            index={index}
-                            isSelected={selectedIndex === index}
-                            productName={productName}
-                            onClick={() => handleThumbnailClick(index)}
-                            hasError={imageLoadErrors.has(index)}
-                            onError={() => handleImageError(index)}
-                        />
-                    ))}
+                <div className="w-full overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
+                    <div className="flex gap-2 w-max min-w-full">
+                        {visibleThumbnails.map((media, index) => (
+                            <ThumbnailButton
+                                key={`thumb-${index}-${media.url}`}
+                                media={media}
+                                index={index}
+                                isSelected={selectedIndex === index}
+                                productName={productName}
+                                onClick={() => handleThumbnailClick(index)}
+                                hasError={imageLoadErrors.has(index)}
+                                onError={() => handleImageError(index)}
+                            />
+                        ))}
 
-                    {remainingCount > 0 && (
-                        <button
-                            onClick={handleMoreClick}
-                            className="w-16 h-16 rounded-xl overflow-hidden border-2 border-dashed border-[#D4AF37] 
-                                     bg-[#D4AF37]/10 flex items-center justify-center hover:bg-[#D4AF37]/20 
-                                     transition-all duration-200"
-                        >
-                            <span className="text-[#D4AF37] font-semibold text-sm">+{remainingCount}</span>
-                        </button>
-                    )}
+                        {remainingCount > 0 && (
+                            <button
+                                onClick={handleMoreClick}
+                                className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl overflow-hidden border-2 border-dashed border-[#D4AF37] 
+                                         bg-[#D4AF37]/10 flex items-center justify-center hover:bg-[#D4AF37]/20 
+                                         transition-all duration-200"
+                            >
+                                <span className="text-[#D4AF37] font-semibold text-xs sm:text-sm">+{remainingCount}</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -306,7 +308,7 @@ const ThumbnailButton = memo(function ThumbnailButton({
         <button
             onClick={onClick}
             className={cn(
-                "w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200 relative",
+                "flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-200 relative",
                 isSelected
                     ? "border-[#D4AF37] shadow-md ring-2 ring-[#D4AF37]/30"
                     : "border-transparent opacity-60 hover:opacity-100 hover:border-gray-300"
@@ -314,25 +316,27 @@ const ThumbnailButton = memo(function ThumbnailButton({
         >
             {media.type === 'video' ? (
                 <div className="w-full h-full bg-purple-100 flex items-center justify-center relative">
-                    <Video className="w-6 h-6 text-purple-500" />
-                    <div className="absolute bottom-0 left-0 right-0 bg-purple-600 text-white text-[8px] text-center py-0.5">
+                    <Video className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-purple-600 text-white text-[7px] sm:text-[8px] text-center py-0.5">
                         VIDEO
                     </div>
                 </div>
             ) : hasError ? (
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                    <Package className="w-6 h-6 text-gray-300" />
+                    <Package className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
                 </div>
             ) : (
-                <Image
-                    src={media.url}
-                    alt={`${productName} thumbnail ${index + 1}`}
-                    width={64}
-                    height={64}
-                    className="object-cover w-full h-full"
-                    loading="lazy"
-                    onError={onError}
-                />
+                <div className="relative w-full h-full">
+                    <Image
+                        src={media.url}
+                        alt={`${productName} thumbnail ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="64px"
+                        loading="lazy"
+                        onError={onError}
+                    />
+                </div>
             )}
         </button>
     );

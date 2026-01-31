@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, User, LogOut, Settings, Shield, Send } from "lucide-react";
-import { useScroll } from "@/hooks/useScroll";
+import { Menu, X, User, LogOut, Settings, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -46,13 +45,7 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const scrolled = useScroll();
   const { user, profile, signOut, loading } = useAuth();
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Navbar scrolled state:', scrolled);
-  }, [scrolled]);
 
   useEffect(() => {
     setMounted(true);
@@ -131,7 +124,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center justify-center flex-1 space-x-6 lg:space-x-12 overflow-x-auto">
+            <div className="hidden md:flex items-center justify-center flex-1 space-x-4 lg:space-x-8 overflow-hidden">
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -177,21 +170,6 @@ export default function Navbar() {
 
             {/* Right Icons */}
             <div className="hidden md:flex items-center space-x-2 lg:space-x-3 flex-shrink-0">
-              <Link href="/inquiry">
-                <motion.button
-                  whileHover={{
-                    scale: 1.1,
-                    transition: { type: "spring", stiffness: 400, damping: 10 }
-                  }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-2 rounded-full transition-all duration-300 text-black hover:text-[#D4AF37] hover:bg-[#D4AF37]/10"
-                  style={{ color: '#000000' }}
-                  title="Send Inquiry"
-                >
-                  <Send size={18} />
-                </motion.button>
-              </Link>
-
               {/* User Authentication */}
               {loading ? (
                 <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
@@ -373,19 +351,6 @@ export default function Navbar() {
                 }}
                 className="p-4 border-t border-gray-200 bg-white flex-shrink-0 space-y-4"
               >
-                <div className="flex items-center justify-center">
-                  <Link href="/inquiry" onClick={() => setMobileMenuOpen(false)}>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="flex items-center justify-center w-12 h-12 text-[#2D2926] hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded-full transition-colors"
-                      title="Send Inquiry"
-                    >
-                      <Send size={20} />
-                    </motion.button>
-                  </Link>
-                </div>
-
                 {/* Mobile Auth Section */}
                 {loading ? (
                   <div className="w-full h-12 bg-gray-200 animate-pulse rounded-lg"></div>
