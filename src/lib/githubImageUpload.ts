@@ -26,8 +26,7 @@ interface MultiUploadResult {
 // Allowed file types
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+// No file size limits - GitHub API has its own limits (100MB per file)
 
 // Get config from environment variables
 export function getGitHubConfig(): GitHubUploadConfig {
@@ -46,12 +45,13 @@ export function isGitHubConfigured(): boolean {
     return !!(config.owner && config.repo && config.token);
 }
 
-// Generate unique filename
-function generateFileName(originalName: string): string {
+// Generate unique filename with optional attempt number for retries
+function generateFileName(originalName: string, attempt: number = 0): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     const extension = originalName.split('.').pop()?.toLowerCase() || 'jpg';
-    return `${timestamp}-${random}.${extension}`;
+    const suffix = attempt > 0 ? `-${attempt}` : '';
+    return `${timestamp}-${random}${suffix}.${extension}`;
 }
 
 // Convert file to base64
@@ -87,21 +87,35 @@ export async function uploadImageToGitHub(file: File): Promise<UploadResult> {
         return { success: false, error: 'Only image and video files are allowed.' };
     }
 
-    // Check file size based on type
-    if (isImage && file.size > MAX_IMAGE_SIZE) {
-        return { success: false, error: 'Image size must be less than 10MB.' };
+    const fileSizeMB = file.size / 1024 / 1024;
+
+    // Check file size before uploading
+    if (fileSizeMB > 100) {
+        return {
+            success: false,
+            error: `File too large (${fileSizeMB.toFixed(1)}MB). Maximum size is 100MB. Please compress the ${isVideo ? 'video' : 'image'} and try again.`
+        };
     }
 
-    if (isVideo && file.size > MAX_VIDEO_SIZE) {
-        return { success: false, error: 'Video size must be less than 100MB.' };
+    // Warn for large files
+    if (fileSizeMB > 50) {
+        console.warn(`⚠️ Large file (${fileSizeMB.toFixed(1)}MB) - upload may take a while`);
     }
+
+    // Log file info
+    console.log('📤 Uploading file:', {
+        name: file.name,
+        type: file.type,
+        size: `${fileSizeMB.toFixed(2)} MB`,
+        isVideo
+    });
 
     try {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('type', isVideo ? 'video' : 'image');
 
-        console.log('Uploading via API route:', file.name, isVideo ? 'video' : 'image');
+        console.log('🔄 Uploading via API route...');
 
         const response = await fetch('/api/upload', {
             method: 'POST',
@@ -111,11 +125,14 @@ export async function uploadImageToGitHub(file: File): Promise<UploadResult> {
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-            console.error('Upload API error:', result.error);
+            console.error('❌ Upload API error:', {
+                status: response.status,
+                error: result.error
+            });
             return { success: false, error: result.error || 'Upload failed' };
         }
 
-        console.log('Upload successful:', result.url);
+        console.log('✅ Upload successful:', result.url);
 
         return {
             success: true,
@@ -123,7 +140,7 @@ export async function uploadImageToGitHub(file: File): Promise<UploadResult> {
             type: result.type
         };
     } catch (error) {
-        console.error('Upload error:', error);
+        console.error('❌ Upload error:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
     }
 }

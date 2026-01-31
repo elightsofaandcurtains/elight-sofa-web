@@ -268,26 +268,40 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Video CTA */}
-      <section className="relative py-20 sm:py-32 bg-[#2D2926] overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <Image
-            src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1920"
-            alt="Background"
-            fill
-            className="object-cover"
-          />
-        </div>
-        <div className="relative z-10 text-center text-white px-4">
-          <button className="w-16 h-16 sm:w-20 sm:h-20 bg-[#D4AF37] rounded-full flex items-center justify-center mb-6 mx-auto shadow-lg hover:scale-110 transition-transform">
-            <Play className="ml-1" size={28} fill="white" />
-          </button>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-4">
-            Experience the Craftsmanship
-          </h2>
-          <p className="text-base sm:text-lg text-gray-300 max-w-2xl mx-auto">
-            Watch how we transform raw materials into timeless pieces of art
-          </p>
+      {/* Video Section - Craftsmanship */}
+      <section className="relative py-0 bg-[#2D2926] overflow-hidden">
+        <div className="relative w-full h-[400px] sm:h-[500px] md:h-[600px]">
+          {/* Video Background */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src="/craftsmanship-video.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/40" />
+
+          {/* Content */}
+          <div className="relative z-10 h-full flex flex-col items-center justify-center text-center text-white px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif font-bold mb-4">
+                Experience the Craftsmanship
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto">
+                Watch how we transform raw materials into timeless pieces of art
+              </p>
+            </motion.div>
+          </div>
         </div>
       </section>
     </div>

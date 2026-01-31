@@ -147,32 +147,6 @@ export default function Footer() {
           </motion.div>
         </div>
 
-        {/* Newsletter */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-12 pt-8 border-t border-gray-700"
-        >
-          <div className="max-w-md">
-            <h4 className="text-lg font-semibold mb-4 uppercase tracking-wider">
-              Newsletter
-            </h4>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-[#D4AF37] min-w-0"
-                suppressHydrationWarning
-              />
-              <button className="px-4 sm:px-6 py-2 bg-[#D4AF37] text-white font-medium uppercase tracking-wider hover:bg-[#B8941F] transition-colors whitespace-nowrap">
-                Subscribe
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
         {/* Copyright */}
         <div className="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400 text-sm">
           <p>{getCopyright()}</p>
