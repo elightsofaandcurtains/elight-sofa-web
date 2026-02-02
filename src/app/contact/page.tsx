@@ -19,18 +19,34 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-[#F9F8F6] pt-20">
-      {/* Hero */}
-      <section className="bg-[#2D2926] text-white py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Hero with Video Background */}
+      <section className="relative overflow-hidden">
+        {/* Video Background */}
+        <div className="absolute inset-0 w-full h-full">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            className="w-full h-full object-cover"
+          >
+            <source src="/showroom-background.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/50"></div>
+        </div>
+
+        {/* Hero Content */}
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center"
+            className="text-center pt-24 pb-28 md:pt-32 md:pb-40"
           >
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-3 md:mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold mb-3 md:mb-4 text-white drop-shadow-lg">
               Visit Our Showroom
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto px-4">
+            <p className="text-base sm:text-lg md:text-xl text-white/90 max-w-2xl mx-auto px-4 drop-shadow-md">
               Experience our luxury furniture in person at {name}
             </p>
           </motion.div>

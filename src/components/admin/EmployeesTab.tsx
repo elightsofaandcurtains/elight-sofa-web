@@ -35,18 +35,18 @@ export default function EmployeesTab() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
-  
+
   // Firebase real-time data states
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [leaves, setLeaves] = useState<EmployeeLeave[]>([]);
   const [commissions, setCommissions] = useState<EmployeeCommission[]>([]);
   const [deductionRecords, setDeductionRecords] = useState<LeaveDeductionRecord[]>([]);
   const [salaryAuditLogs, setSalaryAuditLogs] = useState<SalaryRateAuditLog[]>([]);
-  
+
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Modal states
   const [viewEmployee, setViewEmployee] = useState<Employee | null>(null);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
@@ -56,7 +56,7 @@ export default function EmployeesTab() {
   const [salaryEmployee, setSalaryEmployee] = useState<Employee | null>(null);
   const [salarySettingsEmployee, setSalarySettingsEmployee] = useState<Employee | null>(null);
   const [payslipEmployee, setPayslipEmployee] = useState<Employee | null>(null);
-  
+
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -68,12 +68,12 @@ export default function EmployeesTab() {
   useEffect(() => {
     setIsLoading(true);
     let loadingTimeout: NodeJS.Timeout;
-    
+
     // Set a timeout to stop loading even if no data
     loadingTimeout = setTimeout(() => {
       setIsLoading(false);
     }, 3000);
-    
+
     // Subscribe to employees
     const unsubEmployees = EmployeesService.subscribeToEmployees((data) => {
       console.log('Employees data received:', data.length);
@@ -116,8 +116,8 @@ export default function EmployeesTab() {
 
   const filteredEmployees = employees.filter((emp) => {
     const matchesFilter = activeFilter === "All" || emp.department === activeFilter.toLowerCase();
-    const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      emp.position.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      emp.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
@@ -133,12 +133,12 @@ export default function EmployeesTab() {
 
   // Employee CRUD handlers - Firebase integrated
   const handleViewEmployee = (employee: Employee) => setViewEmployee(employee);
-  
-  const handleEditEmployee = (employee: Employee) => { 
-    setEditEmployee(employee); 
-    setViewEmployee(null); 
+
+  const handleEditEmployee = (employee: Employee) => {
+    setEditEmployee(employee);
+    setViewEmployee(null);
   };
-  
+
   const handleSaveEmployee = async (updatedEmployee: Employee) => {
     setIsSubmitting(true);
     try {
@@ -167,9 +167,9 @@ export default function EmployeesTab() {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleDeleteClick = (employee: Employee) => setDeleteEmployee(employee);
-  
+
   const handleConfirmDelete = async () => {
     if (!deleteEmployee) return;
     setIsSubmitting(true);
@@ -183,7 +183,7 @@ export default function EmployeesTab() {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleAddEmployee = async (employeeData: any) => {
     setIsSubmitting(true);
     try {
@@ -207,7 +207,7 @@ export default function EmployeesTab() {
         workingDaysPerMonth: 26,
         annualLeaves: 24,
       };
-      
+
       await EmployeesService.createEmployee(firebaseData);
       showToast("Employee added successfully!");
     } catch (error: any) {
@@ -227,7 +227,7 @@ export default function EmployeesTab() {
       showToast(error.message || "Failed to apply leave", 'error');
     }
   };
-  
+
   const handleUpdateLeaveStatus = async (leaveId: string, status: 'approved' | 'rejected') => {
     try {
       await EmployeesService.updateLeaveStatus(leaveId, status);
@@ -262,10 +262,10 @@ export default function EmployeesTab() {
   const handleApplyDeduction = async (record: Omit<LeaveDeductionRecord, 'id'>) => {
     try {
       // Check if deduction already applied for this month
-      const existing = deductionRecords.find(r => 
-        r.employeeId === record.employeeId && 
-        r.month === record.month && 
-        r.year === record.year && 
+      const existing = deductionRecords.find(r =>
+        r.employeeId === record.employeeId &&
+        r.month === record.month &&
+        r.year === record.year &&
         r.isDeductionApplied
       );
       if (existing) {
@@ -281,7 +281,7 @@ export default function EmployeesTab() {
 
   const handleUpdateDeductionMode = async (employeeId: string, month: number, year: number, mode: 'automatic' | 'manual') => {
     try {
-      const existingRecord = deductionRecords.find(r => 
+      const existingRecord = deductionRecords.find(r =>
         r.employeeId === employeeId && r.month === month && r.year === year
       );
       if (existingRecord) {
@@ -296,15 +296,15 @@ export default function EmployeesTab() {
   // Salary Settings Handler - Firebase integrated
   const handleSaveSalarySettings = async (settings: Partial<Employee>) => {
     if (!salarySettingsEmployee) return;
-    
+
     try {
       const previousEmployee = employees.find(e => e.id === salarySettingsEmployee.id);
-      
+
       // Create audit log entry
       const auditLog: Omit<SalaryRateAuditLog, 'id'> = {
         employeeId: salarySettingsEmployee.id,
-        action: settings.salaryType !== previousEmployee?.salaryType ? 'salary_type_changed' : 
-                settings.customPerDaySalary !== previousEmployee?.customPerDaySalary ? 'per_day_rate_changed' : 'overtime_rate_changed',
+        action: settings.salaryType !== previousEmployee?.salaryType ? 'salary_type_changed' :
+          settings.customPerDaySalary !== previousEmployee?.customPerDaySalary ? 'per_day_rate_changed' : 'overtime_rate_changed',
         previousSalaryType: previousEmployee?.salaryType,
         newSalaryType: settings.salaryType,
         previousPerDayRate: previousEmployee?.customPerDaySalary,
@@ -314,7 +314,7 @@ export default function EmployeesTab() {
         changedAt: new Date().toISOString(),
       };
       await EmployeesService.addSalaryAuditLog(auditLog);
-      
+
       // Update employee
       await EmployeesService.updateEmployee(salarySettingsEmployee.id, {
         salaryType: settings.salaryType,
@@ -323,7 +323,7 @@ export default function EmployeesTab() {
         overtimeRate: settings.overtimeRate,
         overtimeRateType: settings.overtimeRateType,
       });
-      
+
       setSalarySettingsEmployee(null);
       showToast("Salary settings updated successfully!");
     } catch (error: any) {
@@ -344,31 +344,31 @@ export default function EmployeesTab() {
     const customPerDaySalary = employee.customPerDaySalary || 0;
     const calculatedPerDaySalary = employee.salary / workingDays;
     const effectivePerDaySalary = isPerDaySalaryType && customPerDaySalary > 0 ? customPerDaySalary : calculatedPerDaySalary;
-    
+
     const now = new Date();
-    
-    const deductionRecord = deductionRecords.find(r => 
+
+    const deductionRecord = deductionRecords.find(r =>
       r.employeeId === employee.id && r.month === now.getMonth() && r.year === now.getFullYear()
     );
     const isDeductionApplied = deductionRecord?.isDeductionApplied || false;
     const isAutoMode = deductionRecord?.deductionMode === 'automatic';
-    
+
     const monthLeaves = leaves.filter(l => {
       if (l.employeeId !== employee.id || l.status !== 'approved') return false;
       const leaveDate = new Date(l.fromDate);
       return leaveDate.getMonth() === now.getMonth() && leaveDate.getFullYear() === now.getFullYear();
     });
-    
+
     const unpaidDays = monthLeaves.filter(l => l.leaveType === 'unpaid').reduce((sum, l) => sum + l.totalDays, 0);
     const halfDays = monthLeaves.filter(l => l.leaveType === 'half_day').reduce((sum, l) => sum + l.totalDays, 0);
-    
+
     const monthCommissions = commissions.filter(c => {
       if (c.employeeId !== employee.id) return false;
       const commDate = new Date(c.commissionDate);
       return commDate.getMonth() === now.getMonth() && commDate.getFullYear() === now.getFullYear();
     });
     const totalCommission = monthCommissions.reduce((sum, c) => sum + c.commissionAmount, 0);
-    
+
     if (isPerDaySalaryType) {
       const effectiveWorkingDays = workingDays - (isAutoMode || isDeductionApplied ? unpaidDays + (halfDays * 0.5) : 0);
       return (effectivePerDaySalary * effectiveWorkingDays) + totalCommission;
@@ -401,10 +401,10 @@ export default function EmployeesTab() {
           <h1 className="text-4xl font-serif font-bold text-[#2D2926] mb-2">Employee Management</h1>
           <p className="text-gray-600">Manage employees, leaves, salary & commissions • Real-time Firebase Data</p>
         </div>
-        <motion.button 
-          whileHover={{ scale: 1.05 }} 
-          whileTap={{ scale: 0.95 }} 
-          onClick={() => setShowAddForm(true)} 
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowAddForm(true)}
           disabled={isSubmitting}
           className="px-4 py-2 bg-[#D4AF37] text-white font-medium rounded-lg hover:bg-[#B8941F] transition-colors flex items-center space-x-2 disabled:opacity-50"
         >
@@ -422,11 +422,11 @@ export default function EmployeesTab() {
           { label: "Sales", value: stats.sales, color: "bg-green-50 border-green-200" },
           { label: "On Leave", value: stats.onLeave, color: "bg-orange-50 border-orange-200" },
         ].map((stat, index) => (
-          <motion.div 
-            key={index} 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ delay: index * 0.1 }} 
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
             className={cn("rounded-lg p-4 shadow-md border", stat.color)}
           >
             <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
@@ -440,9 +440,9 @@ export default function EmployeesTab() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex flex-wrap gap-2">
             {departmentTabs.map((tab) => (
-              <button 
-                key={tab} 
-                onClick={() => setActiveFilter(tab)} 
+              <button
+                key={tab}
+                onClick={() => setActiveFilter(tab)}
                 className={cn("px-4 py-2 rounded-lg transition-colors", activeFilter === tab ? "bg-[#D4AF37] text-white" : "bg-gray-100 hover:bg-gray-200")}
               >
                 {tab}
@@ -451,12 +451,12 @@ export default function EmployeesTab() {
           </div>
           <div className="relative">
             <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input 
-              type="text" 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-              placeholder="Search employees..." 
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37] w-full md:w-64" 
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search employees..."
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37] w-full md:w-64"
             />
           </div>
         </div>
@@ -465,7 +465,7 @@ export default function EmployeesTab() {
       {/* Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[1200px]">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
@@ -474,16 +474,16 @@ export default function EmployeesTab() {
                 <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Salary</th>
                 <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Salary</th>
                 <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[280px]">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredEmployees.map((employee, index) => (
-                <motion.tr 
-                  key={employee.id} 
-                  initial={{ opacity: 0, x: -20 }} 
-                  animate={{ opacity: 1, x: 0 }} 
-                  transition={{ delay: index * 0.05 }} 
+                <motion.tr
+                  key={employee.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-4 py-4 whitespace-nowrap">
@@ -516,29 +516,29 @@ export default function EmployeesTab() {
                     </span>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-1">
-                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleViewEmployee(employee)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Profile">
+                    <div className="flex items-center space-x-1 min-w-[280px]">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleViewEmployee(employee)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors flex-shrink-0" title="View Profile">
                         <Eye size={16} />
                       </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setSalaryEmployee(employee)} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors" title="Salary Details">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setSalaryEmployee(employee)} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors flex-shrink-0" title="Salary Details">
                         <DollarSign size={16} />
                       </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setSalarySettingsEmployee(employee)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Salary Rate Settings">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setSalarySettingsEmployee(employee)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors flex-shrink-0" title="Salary Rate Settings">
                         <Settings size={16} />
                       </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setLeaveEmployee(employee)} className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Leave Management">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setLeaveEmployee(employee)} className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors flex-shrink-0" title="Leave Management">
                         <Calendar size={16} />
                       </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setCommissionEmployee(employee)} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors" title="Commission Details">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setCommissionEmployee(employee)} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors flex-shrink-0" title="Commission Details">
                         <TrendingUp size={16} />
                       </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setPayslipEmployee(employee)} className="p-1.5 text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded transition-colors" title="Generate Payslip">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setPayslipEmployee(employee)} className="p-1.5 text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded transition-colors flex-shrink-0" title="Generate Payslip">
                         <FileText size={16} />
                       </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleEditEmployee(employee)} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Edit Employee">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleEditEmployee(employee)} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors flex-shrink-0" title="Edit Employee">
                         <Edit size={16} />
                       </motion.button>
-                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDeleteClick(employee)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete Employee">
+                      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDeleteClick(employee)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0" title="Delete Employee">
                         <Trash2 size={16} />
                       </motion.button>
                     </div>

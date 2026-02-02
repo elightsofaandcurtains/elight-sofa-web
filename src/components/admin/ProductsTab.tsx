@@ -89,7 +89,7 @@ export default function ProductsTab() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    
+
     const unsubscribe = ProductService.subscribeToProducts((fetchedProducts) => {
       setProducts(fetchedProducts);
       setStats(ProductService.getProductStats(fetchedProducts));
@@ -263,8 +263,8 @@ export default function ProductsTab() {
                 onClick={() => setActiveFilter(tab)}
                 className={cn(
                   "px-4 py-2 rounded-lg transition-colors flex items-center space-x-2",
-                  activeFilter === tab 
-                    ? "bg-[#D4AF37] text-white" 
+                  activeFilter === tab
+                    ? "bg-[#D4AF37] text-white"
                     : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                 )}
               >
@@ -294,7 +294,7 @@ export default function ProductsTab() {
       {/* Products Table - LIVE FIREBASE DATA */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[1000px]">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
@@ -304,7 +304,7 @@ export default function ProductsTab() {
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min Stock</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -320,11 +320,11 @@ export default function ProductsTab() {
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden bg-gray-100">
                         {product.imageUrl ? (
-                          <Image 
-                            src={product.imageUrl} 
-                            alt={product.name} 
-                            width={48} 
-                            height={48} 
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            width={48}
+                            height={48}
                             className="object-cover w-full h-full"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'https://via.placeholder.com/48?text=No+Image';
@@ -367,30 +367,30 @@ export default function ProductsTab() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <motion.button 
-                        whileHover={{ scale: 1.1 }} 
-                        whileTap={{ scale: 0.9 }} 
-                        onClick={() => handleViewProduct(product)} 
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" 
+                    <div className="flex items-center space-x-2 min-w-[140px]">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleViewProduct(product)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
                         title="View Product"
                       >
                         <Eye size={16} />
                       </motion.button>
-                      <motion.button 
-                        whileHover={{ scale: 1.1 }} 
-                        whileTap={{ scale: 0.9 }} 
-                        onClick={() => handleEditProduct(product)} 
-                        className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors" 
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleEditProduct(product)}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors flex-shrink-0"
                         title="Edit Product"
                       >
                         <Edit size={16} />
                       </motion.button>
-                      <motion.button 
-                        whileHover={{ scale: 1.1 }} 
-                        whileTap={{ scale: 0.9 }} 
-                        onClick={() => handleDeleteClick(product)} 
-                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors" 
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleDeleteClick(product)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0"
                         title="Delete Product"
                       >
                         <Trash2 size={16} />
@@ -408,12 +408,12 @@ export default function ProductsTab() {
           <div className="text-center py-12">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <div className="text-gray-500 mb-4">
-              {products.length === 0 
-                ? "No products found in Firebase" 
+              {products.length === 0
+                ? "No products found in Firebase"
                 : `No products found for "${activeFilter}" category`}
             </div>
-            <button 
-              onClick={() => setShowAddModal(true)} 
+            <button
+              onClick={() => setShowAddModal(true)}
               className="px-4 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#B8941F] transition-colors"
             >
               Add First Product
@@ -424,30 +424,30 @@ export default function ProductsTab() {
 
       {/* Modals */}
       {showAddModal && (
-        <AddProductModal 
-          onClose={() => setShowAddModal(false)} 
-          onSave={handleAddProduct} 
+        <AddProductModal
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddProduct}
         />
       )}
       {viewProduct && (
-        <ViewProductModal 
-          product={viewProduct} 
-          onClose={() => setViewProduct(null)} 
-          onEdit={() => handleEditProduct(viewProduct)} 
+        <ViewProductModal
+          product={viewProduct}
+          onClose={() => setViewProduct(null)}
+          onEdit={() => handleEditProduct(viewProduct)}
         />
       )}
       {editProduct && (
-        <EditProductModal 
-          product={editProduct} 
-          onClose={() => setEditProduct(null)} 
-          onSave={handleSaveProduct} 
+        <EditProductModal
+          product={editProduct}
+          onClose={() => setEditProduct(null)}
+          onSave={handleSaveProduct}
         />
       )}
       {deleteProduct && (
-        <DeleteProductModal 
-          product={deleteProduct} 
-          onClose={() => setDeleteProduct(null)} 
-          onConfirm={handleConfirmDelete} 
+        <DeleteProductModal
+          product={deleteProduct}
+          onClose={() => setDeleteProduct(null)}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </div>

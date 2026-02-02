@@ -591,7 +591,7 @@ export default function PaymentsTab() {
           </h2>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[1100px]">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
@@ -609,7 +609,7 @@ export default function PaymentsTab() {
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase min-w-[180px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -660,24 +660,24 @@ export default function PaymentsTab() {
                       <td className="px-6 py-4 text-sm capitalize">{modeLabels[payment.paymentMethod] || payment.paymentMethod}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{formatDate(payment.paymentDate)}</td>
                       <td className="px-6 py-4">
-                        <div className="flex space-x-1">
-                          <button onClick={() => openViewModal(payment.id, 'customer')} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="View">
+                        <div className="flex space-x-1 min-w-[180px]">
+                          <button onClick={() => openViewModal(payment.id, 'customer')} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded flex-shrink-0" title="View">
                             <Eye size={16} />
                           </button>
-                          <button onClick={() => openEditModal(payment, 'customer')} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded" title="Edit">
+                          <button onClick={() => openEditModal(payment, 'customer')} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded flex-shrink-0" title="Edit">
                             <Edit size={16} />
                           </button>
                           {payment.pendingAmount > 0 && (
                             <>
-                              <button onClick={() => openAddRecordModal(payment.id, 'customer')} className="p-1.5 text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded" title="Add Partial Payment">
+                              <button onClick={() => openAddRecordModal(payment.id, 'customer')} className="p-1.5 text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded flex-shrink-0" title="Add Partial Payment">
                                 <Plus size={16} />
                               </button>
-                              <button onClick={() => openPayFullModal(payment.id, 'customer', payment.customerName, payment.pendingAmount)} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Pay Full Amount">
+                              <button onClick={() => openPayFullModal(payment.id, 'customer', payment.customerName, payment.pendingAmount)} className="p-1.5 text-green-600 hover:bg-green-50 rounded flex-shrink-0" title="Pay Full Amount">
                                 <CheckCircle size={16} />
                               </button>
                             </>
                           )}
-                          <button onClick={() => openDeleteModal(payment.id, 'customer')} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Delete">
+                          <button onClick={() => openDeleteModal(payment.id, 'customer')} className="p-1.5 text-red-600 hover:bg-red-50 rounded flex-shrink-0" title="Delete">
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -732,24 +732,24 @@ export default function PaymentsTab() {
                       <td className="px-6 py-4 text-sm capitalize">{modeLabels[payment.paymentMethod] || payment.paymentMethod}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{formatDate(payment.paymentDate)}</td>
                       <td className="px-6 py-4">
-                        <div className="flex space-x-1">
-                          <button onClick={() => openViewModal(payment.id, 'supplier')} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="View">
+                        <div className="flex space-x-1 min-w-[180px]">
+                          <button onClick={() => openViewModal(payment.id, 'supplier')} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded flex-shrink-0" title="View">
                             <Eye size={16} />
                           </button>
-                          <button onClick={() => openEditModal(payment, 'supplier')} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded" title="Edit">
+                          <button onClick={() => openEditModal(payment, 'supplier')} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded flex-shrink-0" title="Edit">
                             <Edit size={16} />
                           </button>
                           {payment.pendingAmount > 0 && (
                             <>
-                              <button onClick={() => openAddRecordModal(payment.id, 'supplier')} className="p-1.5 text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded" title="Add Partial Payment">
+                              <button onClick={() => openAddRecordModal(payment.id, 'supplier')} className="p-1.5 text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded flex-shrink-0" title="Add Partial Payment">
                                 <Plus size={16} />
                               </button>
-                              <button onClick={() => openPayFullModal(payment.id, 'supplier', payment.supplierName, payment.pendingAmount)} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Pay Full Amount">
+                              <button onClick={() => openPayFullModal(payment.id, 'supplier', payment.supplierName, payment.pendingAmount)} className="p-1.5 text-green-600 hover:bg-green-50 rounded flex-shrink-0" title="Pay Full Amount">
                                 <CheckCircle size={16} />
                               </button>
                             </>
                           )}
-                          <button onClick={() => openDeleteModal(payment.id, 'supplier')} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Delete">
+                          <button onClick={() => openDeleteModal(payment.id, 'supplier')} className="p-1.5 text-red-600 hover:bg-red-50 rounded flex-shrink-0" title="Delete">
                             <Trash2 size={16} />
                           </button>
                         </div>

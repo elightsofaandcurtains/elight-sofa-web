@@ -93,7 +93,7 @@ export default function InvoiceTab() {
   const [showFilters, setShowFilters] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  
+
   // Modal states
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -101,7 +101,7 @@ export default function InvoiceTab() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<InvoiceDocument | null>(null);
-  
+
   // Loading states
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
@@ -119,19 +119,19 @@ export default function InvoiceTab() {
   // Filter invoices (client-side filtering for real-time data)
   const filteredInvoices = invoices.filter((invoice) => {
     // Search filter
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       invoice.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       invoice.salespersonName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       invoice.customerPhone.includes(searchQuery);
-    
+
     // Status filter
     const matchesStatus = filterStatus === "all" || invoice.paymentStatus === filterStatus;
-    
+
     // Date range filter
     const matchesDateFrom = !dateFrom || invoice.invoiceDate >= dateFrom;
     const matchesDateTo = !dateTo || invoice.invoiceDate <= dateTo;
-    
+
     return matchesSearch && matchesStatus && matchesDateFrom && matchesDateTo;
   });
 
@@ -232,9 +232,9 @@ export default function InvoiceTab() {
           <h2 className="text-2xl font-bold text-[#2D2926]">Invoice Management</h2>
           <p className="text-gray-600">Create and manage customer invoices • Live from Firebase</p>
         </div>
-        <motion.button 
-          whileHover={{ scale: 1.02 }} 
-          whileTap={{ scale: 0.98 }} 
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={handleCreateInvoice}
           className="flex items-center space-x-2 px-4 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#B8941F] transition-colors shadow-md"
         >
@@ -288,15 +288,15 @@ export default function InvoiceTab() {
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="flex-1 relative">
           <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input 
-            type="text" 
-            value={searchQuery} 
+          <input
+            type="text"
+            value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by invoice number, customer, salesperson, or phone..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37]" 
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#D4AF37]"
           />
         </div>
-        
+
         {/* Date Range Filters */}
         <div className="flex gap-2">
           <div className="relative">
@@ -323,32 +323,30 @@ export default function InvoiceTab() {
 
         {/* Status Filter */}
         <div className="relative">
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${
-              filterStatus !== "all" ? "border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]" : "border-gray-300 hover:border-[#D4AF37]"
-            }`}
+            className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${filterStatus !== "all" ? "border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]" : "border-gray-300 hover:border-[#D4AF37]"
+              }`}
           >
             <Filter size={20} />
             <span>Status{filterStatus !== "all" ? `: ${filterStatus}` : ""}</span>
           </button>
           <AnimatePresence>
             {showFilters && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }} 
-                animate={{ opacity: 1, y: 0 }} 
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
               >
                 <div className="p-2">
                   <p className="text-xs text-gray-500 px-2 py-1">Payment Status</p>
                   {(["all", "Paid", "Partial", "Pending"] as FilterStatus[]).map((status) => (
-                    <button 
-                      key={status} 
+                    <button
+                      key={status}
                       onClick={() => { setFilterStatus(status); setShowFilters(false); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                        filterStatus === status ? "bg-[#D4AF37]/10 text-[#D4AF37]" : "hover:bg-gray-100"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${filterStatus === status ? "bg-[#D4AF37]/10 text-[#D4AF37]" : "hover:bg-gray-100"
+                        }`}
                     >
                       {status === "all" ? "All Invoices" : status}
                     </button>
@@ -383,7 +381,7 @@ export default function InvoiceTab() {
       {!loading && (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[1000px]">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Details</th>
@@ -391,15 +389,15 @@ export default function InvoiceTab() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredInvoices.map((invoice) => (
-                  <motion.tr 
-                    key={invoice.id} 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
+                  <motion.tr
+                    key={invoice.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -427,49 +425,49 @@ export default function InvoiceTab() {
                       {new Date(invoice.invoiceDate).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-1">
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }} 
-                          whileTap={{ scale: 0.9 }} 
+                      <div className="flex items-center space-x-1 min-w-[200px]">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => handleViewInvoice(invoice)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
                           title="View Invoice"
                         >
                           <Eye size={18} />
                         </motion.button>
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }} 
-                          whileTap={{ scale: 0.9 }} 
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => handleEditInvoice(invoice)}
-                          className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" 
+                          className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors flex-shrink-0"
                           title="Edit Invoice"
                         >
                           <Edit size={18} />
                         </motion.button>
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }} 
-                          whileTap={{ scale: 0.9 }} 
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => handleDeleteClick(invoice)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                           title="Delete Invoice"
                         >
                           <Trash2 size={18} />
                         </motion.button>
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }} 
-                          whileTap={{ scale: 0.9 }} 
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => handleDownloadPDF(invoice)}
-                          disabled={downloadingId === invoice.id} 
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50" 
+                          disabled={downloadingId === invoice.id}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
                           title="Download PDF"
                         >
                           {downloadingId === invoice.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                         </motion.button>
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }} 
-                          whileTap={{ scale: 0.9 }} 
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={() => handleShareClick(invoice)}
-                          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" 
+                          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors flex-shrink-0"
                           title="Share Invoice"
                         >
                           <Send size={18} />
@@ -489,13 +487,13 @@ export default function InvoiceTab() {
               <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices found</h3>
               <p className="text-gray-500 mb-4">
                 {searchQuery || filterStatus !== "all" || dateFrom || dateTo
-                  ? "Try adjusting your search or filter criteria" 
+                  ? "Try adjusting your search or filter criteria"
                   : "Create your first invoice to get started"}
               </p>
               {!searchQuery && filterStatus === "all" && !dateFrom && !dateTo && (
-                <motion.button 
-                  whileHover={{ scale: 1.02 }} 
-                  whileTap={{ scale: 0.98 }} 
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handleCreateInvoice}
                   className="px-4 py-2 bg-[#D4AF37] text-white rounded-lg hover:bg-[#B8941F] transition-colors"
                 >
@@ -510,26 +508,26 @@ export default function InvoiceTab() {
       {/* Modals */}
       <AnimatePresence>
         {showViewModal && selectedInvoice && (
-          <ViewInvoiceModal 
-            invoice={selectedInvoice} 
-            onClose={() => { setShowViewModal(false); setSelectedInvoice(null); }} 
+          <ViewInvoiceModal
+            invoice={selectedInvoice}
+            onClose={() => { setShowViewModal(false); setSelectedInvoice(null); }}
           />
         )}
       </AnimatePresence>
       <AnimatePresence>
         {showDeleteModal && selectedInvoice && (
-          <DeleteInvoiceModal 
-            invoice={selectedInvoice} 
-            onClose={() => { setShowDeleteModal(false); setSelectedInvoice(null); }} 
-            onConfirm={handleDeleteConfirm} 
+          <DeleteInvoiceModal
+            invoice={selectedInvoice}
+            onClose={() => { setShowDeleteModal(false); setSelectedInvoice(null); }}
+            onConfirm={handleDeleteConfirm}
           />
         )}
       </AnimatePresence>
       <AnimatePresence>
         {showShareModal && selectedInvoice && (
-          <ShareInvoiceModal 
-            invoice={selectedInvoice} 
-            onClose={() => { setShowShareModal(false); setSelectedInvoice(null); }} 
+          <ShareInvoiceModal
+            invoice={selectedInvoice}
+            onClose={() => { setShowShareModal(false); setSelectedInvoice(null); }}
           />
         )}
       </AnimatePresence>

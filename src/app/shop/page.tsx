@@ -250,53 +250,71 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-[#F9F8F6] pt-24 pb-12 overflow-x-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Animated Header */}
+        {/* Animated Header with Video Background */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-12 relative overflow-hidden rounded-3xl"
         >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            <span className="inline-block px-4 py-1 bg-[#D4AF37]/10 text-[#D4AF37] text-sm font-medium rounded-full mb-4">
-              Premium Collection
-            </span>
-          </motion.div>
+          {/* Video Background for Header */}
+          <div className="absolute inset-0 w-full h-full">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              className="w-full h-full object-cover"
+            >
+              <source src="/sofa-background.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-black/40"></div>
+          </div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-[#2D2926] mb-4"
-          >
-            Our Collections
-          </motion.h1>
+          {/* Header Content */}
+          <div className="relative z-10 py-24 md:py-32 px-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              <span className="inline-block px-4 py-1 bg-[#D4AF37]/90 text-white text-sm font-medium rounded-full mb-4">
+                Premium Collection
+              </span>
+            </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-4"
-          >
-            Discover our curated selection of luxury furniture pieces and premium curtains
-          </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white mb-4 drop-shadow-lg"
+            >
+              Our Collections
+            </motion.h1>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
-            className="flex items-center justify-center gap-2 mt-4"
-          >
-            <span className="w-12 h-[2px] bg-[#D4AF37]"></span>
-            <span className="text-sm text-[#D4AF37] font-medium">
-              {products.length} products available
-            </span>
-            <span className="w-12 h-[2px] bg-[#D4AF37]"></span>
-          </motion.div>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="text-base md:text-lg text-white/90 max-w-2xl mx-auto px-4 drop-shadow-md"
+            >
+              Discover our curated selection of luxury furniture pieces and premium curtains
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              className="flex items-center justify-center gap-2 mt-4"
+            >
+              <span className="w-12 h-[2px] bg-[#D4AF37]"></span>
+              <span className="text-sm text-[#D4AF37] font-medium drop-shadow-md">
+                {products.length} products available
+              </span>
+              <span className="w-12 h-[2px] bg-[#D4AF37]"></span>
+            </motion.div>
+          </div>
         </motion.div>
 
         {/* Horizontal Filters with animation */}

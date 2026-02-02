@@ -204,7 +204,7 @@ export default function InquiriesTab() {
         className="bg-white rounded-xl shadow-md overflow-hidden"
       >
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[900px]">
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
@@ -213,7 +213,7 @@ export default function InquiriesTab() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Budget</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">Date</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase min-w-[120px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -275,16 +275,16 @@ export default function InquiriesTab() {
                       <p className="text-sm text-gray-600">{formatDate(inquiry.createdAt)}</p>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-2 min-w-[120px]">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleViewInquiry(inquiry); }}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                         >
                           <Eye size={18} className="text-gray-600" />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setInquiryToDelete(inquiry); setShowDeleteModal(true); }}
-                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                         >
                           <Trash2 size={18} className="text-red-500" />
                         </button>
