@@ -198,7 +198,10 @@ const nextConfig = {
   },
   // PWA optimization
   reactStrictMode: true,
-  swcMinify: true,
+  // Use webpack explicitly for next-pwa compatibility
+  experimental: {
+    turbo: {},
+  },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
