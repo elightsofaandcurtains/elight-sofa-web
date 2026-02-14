@@ -4,11 +4,13 @@
     "private": true,
     "scripts": {
         "dev": "next dev",
-        "build": "next build",
+        "build": "next build --webpack",
         "start": "next start",
         "lint": "next lint",
         "create-admin-simple": "node scripts/create-admin-simple.js",
-        "test-auth": "node scripts/test-auth.js"
+        "test-auth": "node scripts/test-auth.js",
+        "pwa:build": "next build --webpack && next start",
+        "pwa:analyze": "echo 'Open http://localhost:3000 and run Lighthouse audit in Chrome DevTools'"
     },
     "dependencies": {
         "@hookform/resolvers": "^3.3.4",
